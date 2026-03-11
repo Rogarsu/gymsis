@@ -3745,3 +3745,18 @@ export function getByMuscle(muscle, environment, level) {
 export function getExerciseImage(exerciseId, sex = 'male') {
   return `/exercises/${exerciseId}/${sex}.jpg`
 }
+
+export function getById(id) {
+  return EXERCISES.find(ex => ex.id === id) || null
+}
+
+export function getAlternatives(exId, environment, level) {
+  const ex = getById(exId)
+  if (!ex) return []
+  return EXERCISES.filter(e =>
+    e.id !== exId &&
+    e.muscle === ex.muscle &&
+    (!environment || environment === 'any' || e.environment.includes(environment)) &&
+    (!level || e.level.includes(level))
+  )
+}
