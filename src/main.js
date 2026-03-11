@@ -234,7 +234,7 @@ function showApp() {
 
   // Badge de modo invitado
   const emailEl = document.getElementById('nav-user-email')
-  if (emailEl) emailEl.textContent = isGuestMode() ? '👤 Modo invitado' : (_user?.email || '')
+  if (emailEl) emailEl.innerHTML = isGuestMode() ? '<i data-lucide="user"></i> Modo invitado' : (_user?.email || '')
 
   const meta = _plan?.meta || {}
   initSession(_plan, meta.level || 'intermediate', meta.environment || 'gym')
@@ -288,8 +288,8 @@ function navigateTo(module) {
 // ── Gestión del plan ──────────────────────────────────────────
 function showNewCycle() {
   showConfirm(
-    '🔄 Nuevo Ciclo',
-    '⚠️ Esto borrará TODO tu historial: sesiones, pesos registrados y el plan actual. Esta acción es irreversible.',
+    'Nuevo Ciclo',
+    'Esto borrará TODO tu historial: sesiones, pesos registrados y el plan actual. Esta acción es irreversible.',
     async () => {
       clearAllUserData()
       if (_user?.id) {
@@ -319,7 +319,7 @@ function showNewCycle() {
 
 function resetProgress() {
   showConfirm(
-    '↺ Reiniciar Progreso',
+    'Reiniciar Progreso',
     'Se borrarán todas las sesiones completadas y los pesos registrados. El plan de entrenamiento se mantiene.',
     async () => {
       clearProgressData()
@@ -418,9 +418,9 @@ function showConnectionBanner(state) {
   banner.className = 'conn-banner'
 
   const configs = {
-    offline:  { cls: 'conn-offline',  text: '📴 Sin conexión — cambios guardados localmente' },
-    syncing:  { cls: 'conn-syncing',  text: '🔄 Sincronizando...' },
-    synced:   { cls: 'conn-synced',   text: '✓ Sincronizado' }
+    offline:  { cls: 'conn-offline',  text: 'Sin conexión — cambios guardados localmente' },
+    syncing:  { cls: 'conn-syncing',  text: 'Sincronizando...' },
+    synced:   { cls: 'conn-synced',   text: 'Sincronizado' }
   }
 
   const cfg = configs[state]

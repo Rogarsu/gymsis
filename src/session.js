@@ -7,6 +7,7 @@ import { getExLog, setExLog, clearExLog, getLog, addLog, getAllExLogs,
          getExSwap, setExSwap, clearExSwap } from './storage.js'
 import { getRecommendationForExercise, formatRecommendation } from './progression.js'
 import { getById, getAlternatives } from './exercises.js'
+import { ic, refreshIcons } from './icons.js'
 
 // ── Estado de la sesión ───────────────────────────────────────
 let _plan = null
@@ -67,7 +68,7 @@ export function renderSidebar() {
                 onclick="loadSession('${s.id}')">
                 <span class="session-num">${s.number}</span>
                 <span class="session-name">${s.name}</span>
-                ${isCompleted ? '<span class="session-check">✓</span>' : ''}
+                ${isCompleted ? `<span class="session-check">${ic('check')}</span>` : ''}
               </button>
             `
           }).join('')}
@@ -97,6 +98,7 @@ export function loadSession(sessionId) {
   renderSessionView(session)
   renderSidebar()
   updateStats()
+  refreshIcons()
 }
 
 export function loadNextSession() {
@@ -134,9 +136,9 @@ function renderSessionView(session) {
       </div>
       <div class="session-header-actions">
         ${isCompleted
-          ? `<span class="badge-completed">✓ Completada</span>`
+          ? `<span class="badge-completed">${ic('check')} Completada</span>`
           : `<button class="btn btn-primary" id="btn-start-session" onclick="startSessionTimer('${session.id}')">
-              ${startTs ? '▶ Continuar sesión' : '▶ Iniciar sesión'}
+              ${startTs ? `${ic('play')} Continuar sesión` : `${ic('play')} Iniciar sesión`}
              </button>`
         }
       </div>
@@ -146,7 +148,7 @@ function renderSessionView(session) {
     <div class="session-timer ${startTs ? '' : 'hidden'}" id="session-timer">
       <span class="timer-icon">⏱</span>
       <span class="timer-display" id="timer-display">00:00</span>
-      <button class="btn btn-sm btn-danger" onclick="openLogForm()">🚩 Sesión finalizada</button>
+      <button class="btn btn-sm btn-danger" onclick="openLogForm()">${ic('flag')} Sesión finalizada</button>
     </div>
 
     <!-- Tabs -->
@@ -159,21 +161,21 @@ function renderSessionView(session) {
     <!-- Tab: Pre-Entreno -->
     <div class="tab-panel" id="panel-pre">
       <div class="pre-workout-card">
-        <h3>💧 Hidratación recomendada</h3>
+        <h3>${ic('droplets')} Hidratación recomendada</h3>
         <p>Bebe 500 ml de agua 30 minutos antes del entrenamiento. Durante la sesión: 200–300 ml cada 20 min.</p>
       </div>
       <div class="pre-workout-card">
-        <h3>🔥 Calentamiento dinámico (5 min)</h3>
+        <h3>${ic('flame')} Calentamiento dinámico (5 min)</h3>
         <ul class="warmup-list">
-          <li>🦵 Rotaciones de cadera — 10 por lado</li>
-          <li>💪 Círculos de hombros — 10 hacia adelante y atrás</li>
-          <li>🧘 Movilidad torácica — 10 rotaciones</li>
-          <li>🏃 Sentadillas con peso corporal — 15 reps lentas</li>
-          <li>🤸 Saltos suaves en el lugar — 30 seg</li>
+          <li>${ic('activity')} Rotaciones de cadera — 10 por lado</li>
+          <li>${ic('dumbbell')} Círculos de hombros — 10 hacia adelante y atrás</li>
+          <li>${ic('person-standing')} Movilidad torácica — 10 rotaciones</li>
+          <li>${ic('person-running')} Sentadillas con peso corporal — 15 reps lentas</li>
+          <li>${ic('activity')} Saltos suaves en el lugar — 30 seg</li>
         </ul>
       </div>
       <div class="pre-workout-card">
-        <h3>🧠 Enfoque mental</h3>
+        <h3>${ic('brain')} Enfoque mental</h3>
         <p>Antes de empezar, toma 3 respiraciones profundas. Define tu intención para esta sesión: ¿qué quieres mejorar hoy?</p>
       </div>
     </div>
@@ -181,7 +183,7 @@ function renderSessionView(session) {
     <!-- Tab: Entreno -->
     <div class="tab-panel hidden" id="panel-workout">
       <div class="workout-toolbar">
-        <button class="btn btn-secondary" onclick="startGuidedMode('${session.id}')">▶ Modo guiado</button>
+        <button class="btn btn-secondary" onclick="startGuidedMode('${session.id}')">${ic('play')} Modo guiado</button>
       </div>
       ${renderExerciseTable(session)}
     </div>
@@ -189,11 +191,11 @@ function renderSessionView(session) {
     <!-- Tab: Post-Entreno -->
     <div class="tab-panel hidden" id="panel-post">
       <div class="post-workout-card">
-        <h3>❄️ Enfriamiento (5–8 min)</h3>
+        <h3>${ic('snowflake')} Enfriamiento (5–8 min)</h3>
         <p>Camina lento durante 3–5 minutos para bajar la frecuencia cardíaca gradualmente.</p>
       </div>
       <div class="post-workout-card">
-        <h3>🧘 Estiramientos de recuperación</h3>
+        <h3>${ic('person-standing')} Estiramientos de recuperación</h3>
         <ul class="warmup-list">
           <li>Cuádriceps de pie — 30 seg por lado</li>
           <li>Isquiotibiales sentado — 30 seg por lado</li>
@@ -203,11 +205,11 @@ function renderSessionView(session) {
         </ul>
       </div>
       <div class="post-workout-card">
-        <h3>🍗 Nutrición post-entreno</h3>
+        <h3>${ic('utensils')} Nutrición post-entreno</h3>
         <p>Dentro de los 30–60 min post-entreno: proteína de rápida absorción (batido + fruta) o comida completa con proteína + carbohidratos.</p>
       </div>
       ${!isCompleted ? `
-        <button class="btn btn-primary btn-full" onclick="openLogForm()">🚩 Finalizar y registrar sesión</button>
+        <button class="btn btn-primary btn-full" onclick="openLogForm()">${ic('flag')} Finalizar y registrar sesión</button>
       ` : ''}
     </div>
   `
@@ -251,10 +253,10 @@ function renderExerciseTable(session) {
                 </div>
               </div>
               <div class="exercise-row-meta">
-                <span class="ex-weight-guide">🎯 ${ex.weightGuide}</span>
+                <span class="ex-weight-guide">${ic('target')} ${ex.weightGuide}</span>
                 ${hasLog ? `<span class="ex-logged-info">${log.sets.map(s => `${s.weight}kg×${s.reps}`).join(' · ')}</span>` : ''}
               </div>
-              ${ex.notes ? `<div class="exercise-row-notes">💡 ${ex.notes}</div>` : ''}
+              ${ex.notes ? `<div class="exercise-row-notes">${ic('lightbulb')} ${ex.notes}</div>` : ''}
             </div>
           `
         }).join('')}
@@ -344,6 +346,7 @@ export function openExModal(exId, sessionId) {
   }
 
   overlay.classList.remove('hidden')
+  refreshIcons()
 }
 
 export function closeExModal(e) {
@@ -366,7 +369,7 @@ function renderModalSerieMode(planEx, activeEx, rec, currentSerie, completedSets
       </div>
     </div>
 
-    ${activeEx.notes || planEx.notes ? `<p class="modal-ex-notes">💡 ${activeEx.notes || planEx.notes}</p>` : ''}
+    ${activeEx.notes || planEx.notes ? `<p class="modal-ex-notes">${ic('lightbulb')} ${activeEx.notes || planEx.notes}</p>` : ''}
 
     <!-- Sets completados -->
     ${completedSets.length > 0 ? `
@@ -395,7 +398,7 @@ function renderModalSerieMode(planEx, activeEx, rec, currentSerie, completedSets
         </div>
       </div>
       <button class="btn btn-primary btn-full" onclick="completeCurrentSerie()">
-        ${currentSerie + 1 < planEx.sets ? '✓ Completar serie →' : '✓ Completar y guardar'}
+        ${currentSerie + 1 < planEx.sets ? `${ic('check')} Completar serie ${ic('arrow-right')}` : `${ic('check')} Completar y guardar`}
       </button>
     </div>
 
@@ -413,7 +416,7 @@ function renderModalSerieMode(planEx, activeEx, rec, currentSerie, completedSets
       </div>
       <div class="inline-timer-controls">
         <button class="btn btn-sm btn-ghost" onclick="inlineTimerAdjust(-30)">−30</button>
-        <button class="btn btn-sm btn-secondary" onclick="skipInlineTimer()">Saltar →</button>
+        <button class="btn btn-sm btn-secondary" onclick="skipInlineTimer()">Saltar ${ic('arrow-right')}</button>
         <button class="btn btn-sm btn-ghost" onclick="inlineTimerAdjust(+30)">+30</button>
       </div>
     </div>
@@ -428,7 +431,7 @@ function renderModalSerieMode(planEx, activeEx, rec, currentSerie, completedSets
     <!-- Acciones del modal -->
     <div class="modal-actions-row">
       <button class="btn btn-ghost btn-sm" onclick="openSwapModal('${_modalExId}','${_modalSessionId}')">
-        🔄 Cambiar ejercicio
+        ${ic('refresh-cw')} Cambiar ejercicio
       </button>
       ${swapId ? `<button class="btn btn-ghost btn-sm" onclick="revertSwap('${_modalExId}','${_modalSessionId}')">↶ Volver al original</button>` : ''}
     </div>
@@ -448,7 +451,7 @@ function renderModalEdit(planEx, activeEx, existingLog, rec) {
       </div>
     </div>
 
-    ${activeEx.notes || planEx.notes ? `<p class="modal-ex-notes">💡 ${activeEx.notes || planEx.notes}</p>` : ''}
+    ${activeEx.notes || planEx.notes ? `<p class="modal-ex-notes">${ic('lightbulb')} ${activeEx.notes || planEx.notes}</p>` : ''}
 
     <div class="modal-edit-sets" id="edit-sets-container">
       ${sets.map((s, i) => `
@@ -462,7 +465,7 @@ function renderModalEdit(planEx, activeEx, existingLog, rec) {
       `).join('')}
     </div>
 
-    <button class="btn btn-primary btn-full" onclick="saveEditedSets('${_modalExId}','${_modalSessionId}')">💾 Guardar cambios</button>
+    <button class="btn btn-primary btn-full" onclick="saveEditedSets('${_modalExId}','${_modalSessionId}')">${ic('save')} Guardar cambios</button>
 
     <div class="modal-recommendation">
       <h4>Para la próxima sesión:</h4>
@@ -472,7 +475,7 @@ function renderModalEdit(planEx, activeEx, existingLog, rec) {
 
     <div class="modal-actions-row">
       <button class="btn btn-ghost btn-sm" onclick="openSwapModal('${_modalExId}','${_modalSessionId}')">
-        🔄 Cambiar ejercicio
+        ${ic('refresh-cw')} Cambiar ejercicio
       </button>
       ${swapId ? `<button class="btn btn-ghost btn-sm" onclick="revertSwap('${_modalExId}','${_modalSessionId}')">↶ Volver al original</button>` : ''}
     </div>
@@ -543,7 +546,7 @@ export function completeCurrentSerie() {
       const title = inputArea2.querySelector('.serie-title')
       if (title) title.textContent = `Serie ${_modalCurrentSerie + 1} de ${_modalTotalSeries} · Objetivo: ${planEx?.reps} reps`
       const btn = inputArea2.querySelector('button')
-      if (btn) btn.textContent = _modalCurrentSerie + 1 < _modalTotalSeries ? '✓ Completar serie →' : '✓ Completar y guardar'
+      if (btn) btn.innerHTML = _modalCurrentSerie + 1 < _modalTotalSeries ? `${ic('check')} Completar serie ${ic('arrow-right')}` : `${ic('check')} Completar y guardar`
       // Limpiar reps
       const repsInput = document.getElementById('serie-reps')
       if (repsInput) repsInput.value = ''
@@ -742,7 +745,7 @@ function refreshExerciseRow(exId, sessionId) {
       if (workoutTable) {
         view.innerHTML = `
           <div class="workout-toolbar">
-            <button class="btn btn-secondary" onclick="startGuidedMode('${sessionId}')">▶ Modo guiado</button>
+            <button class="btn btn-secondary" onclick="startGuidedMode('${sessionId}')">${ic('play')} Modo guiado</button>
           </div>
           ${renderExerciseTable(session)}
         `
@@ -857,15 +860,15 @@ export function startGuidedMode(sessionId) {
     if (content) {
       content.innerHTML = `
         <div class="guided-resume-screen">
-          <div class="guided-resume-icon">💾</div>
+          <div class="guided-resume-icon">${ic('save')}</div>
           <h3>Ya tienes progreso guardado</h3>
           <p>${doneSoFar} de ${session.exercises.length} ejercicios completados en esta sesión.</p>
           <div class="guided-resume-actions">
             <button class="btn btn-primary btn-full" onclick="guidedResume('${sessionId}')">
-              ▶ Retomar desde donde dejé
+              ${ic('play')} Retomar desde donde dejé
             </button>
             <button class="btn btn-ghost btn-full" onclick="guidedRestart('${sessionId}')">
-              🔄 Empezar de nuevo
+              ${ic('refresh-cw')} Empezar de nuevo
             </button>
           </div>
         </div>
@@ -877,6 +880,7 @@ export function startGuidedMode(sessionId) {
 
   renderGuidedExercise(session)
   overlay.classList.remove('hidden')
+  refreshIcons()
 }
 
 function renderGuidedExercise(session) {
@@ -886,6 +890,7 @@ function renderGuidedExercise(session) {
   if (_guidedExIndex >= _guidedExercises.length) {
     // Resumen final
     content.innerHTML = renderGuidedSummary(session)
+    refreshIcons()
     return
   }
 
@@ -912,7 +917,7 @@ function renderGuidedExercise(session) {
       <span class="ex-tag">${planEx.sets} × ${planEx.reps}</span>
       <span class="ex-tag">⏱ ${planEx.rest}</span>
     </div>
-    ${planEx.notes ? `<p class="modal-ex-notes">💡 ${planEx.notes}</p>` : ''}
+    ${planEx.notes ? `<p class="modal-ex-notes">${ic('lightbulb')} ${planEx.notes}</p>` : ''}
     <div class="rec-box">
       <strong>Peso recomendado:</strong> ${formatRecommendation(rec)}
     </div>
@@ -931,7 +936,7 @@ function renderGuidedExercise(session) {
         </div>
       </div>
       <button class="btn btn-primary btn-full" onclick="completeGuidedSerie('${session.id}')">
-        ✓ Serie completada →
+        ${ic('check')} Serie completada ${ic('arrow-right')}
       </button>
     </div>
     <div class="inline-timer hidden" id="guided-inline-timer">
@@ -947,11 +952,12 @@ function renderGuidedExercise(session) {
       </div>
       <div class="inline-timer-controls">
         <button class="btn btn-sm btn-ghost" onclick="guidedTimerAdjust(-30)">−30</button>
-        <button class="btn btn-sm btn-secondary" onclick="skipGuidedTimer('${session.id}')">Saltar →</button>
+        <button class="btn btn-sm btn-secondary" onclick="skipGuidedTimer('${session.id}')">Saltar ${ic('arrow-right')}</button>
         <button class="btn btn-sm btn-ghost" onclick="guidedTimerAdjust(+30)">+30</button>
       </div>
     </div>
   `
+  refreshIcons()
 }
 
 let _guidedCompletedSets = []
@@ -1061,7 +1067,8 @@ function showNextGuidedSerie(planEx) {
     const repsInput = document.getElementById('guided-reps')
     if (repsInput) repsInput.value = ''
     const btn = serieInput.querySelector('button')
-    if (btn) btn.textContent = _guidedCurrentSerie + 1 < planEx.sets ? '✓ Serie completada →' : '✓ Último set — ¡A por ello!'
+    if (btn) btn.innerHTML = _guidedCurrentSerie + 1 < planEx.sets ? `${ic('check')} Serie completada ${ic('arrow-right')}` : `${ic('check')} Último set — ¡A por ello!`
+    refreshIcons()
   }
 }
 
@@ -1071,12 +1078,13 @@ function startGuidedRestTimer(seconds, sessionId) {
   let remaining = seconds
   content.innerHTML = `
     <div class="guided-rest-screen">
-      <h3>💪 ¡Set completado!</h3>
+      <h3>${ic('dumbbell')} ¡Set completado!</h3>
       <p>Descansa antes del siguiente ejercicio</p>
       <div class="guided-rest-time" id="guided-rest-time">${formatSecs(remaining)}</div>
-      <button class="btn btn-primary" onclick="skipGuidedRest('${sessionId}')">Continuar →</button>
+      <button class="btn btn-primary" onclick="skipGuidedRest('${sessionId}')">Continuar ${ic('arrow-right')}</button>
     </div>
   `
+  refreshIcons()
   _guidedTimerInterval = setInterval(() => {
     remaining--
     const el = document.getElementById('guided-rest-time')
@@ -1106,7 +1114,7 @@ function renderGuidedSummary(session) {
   })
   return `
     <div class="guided-summary">
-      <h3>🎉 ¡Sesión completada!</h3>
+      <h3>${ic('sparkles')} ¡Sesión completada!</h3>
       <p>Aquí está el resumen de tu entrenamiento:</p>
       <div class="summary-list">
         ${setsData.map(ex => `
@@ -1118,7 +1126,7 @@ function renderGuidedSummary(session) {
           </div>
         `).join('')}
       </div>
-      <button class="btn btn-primary btn-full" onclick="openLogForm()">🚩 Registrar y cerrar sesión</button>
+      <button class="btn btn-primary btn-full" onclick="openLogForm()">${ic('flag')} Registrar y cerrar sesión</button>
       <button class="btn btn-ghost btn-full" onclick="closeGuidedMode()">Cerrar</button>
     </div>
   `
@@ -1137,7 +1145,7 @@ export function closeGuidedMode() {
       const view = document.getElementById('panel-workout')
       if (view) view.innerHTML = `
         <div class="workout-toolbar">
-          <button class="btn btn-secondary" onclick="startGuidedMode('${_currentSessionId}')">▶ Modo guiado</button>
+          <button class="btn btn-secondary" onclick="startGuidedMode('${_currentSessionId}')">${ic('play')} Modo guiado</button>
         </div>
         ${renderExerciseTable(session)}`
     }

@@ -1,19 +1,20 @@
 // ─────────────────────────────────────────────────────────────
 // wellness.js — Chequeo de bienestar y plan de recuperación
 // ─────────────────────────────────────────────────────────────
+import { ic, refreshIcons } from './icons.js'
 
 const MUSCLES = [
-  { id: 'quads',        label: 'Cuádriceps',       icon: '🦵' },
-  { id: 'glutes',       label: 'Glúteo',            icon: '🍑' },
-  { id: 'hamstrings',   label: 'Isquiotibiales',    icon: '🦵' },
-  { id: 'calves',       label: 'Pantorrillas',      icon: '🦶' },
-  { id: 'core',         label: 'Core / Abdomen',    icon: '🌀' },
-  { id: 'chest',        label: 'Pecho',             icon: '💪' },
-  { id: 'back',         label: 'Espalda / Dorsal',  icon: '🔙' },
-  { id: 'shoulders',    label: 'Hombros',           icon: '🤷' },
-  { id: 'biceps',       label: 'Bíceps',            icon: '💪' },
-  { id: 'triceps',      label: 'Tríceps',           icon: '💪' },
-  { id: 'forearms',     label: 'Antebrazos',        icon: '🤜' }
+  { id: 'quads',        label: 'Cuádriceps',       icon: 'activity' },
+  { id: 'glutes',       label: 'Glúteo',            icon: 'activity' },
+  { id: 'hamstrings',   label: 'Isquiotibiales',    icon: 'activity' },
+  { id: 'calves',       label: 'Pantorrillas',      icon: 'footprints' },
+  { id: 'core',         label: 'Core / Abdomen',    icon: 'circle-dashed' },
+  { id: 'chest',        label: 'Pecho',             icon: 'heart' },
+  { id: 'back',         label: 'Espalda / Dorsal',  icon: 'arrow-left' },
+  { id: 'shoulders',    label: 'Hombros',           icon: 'person-standing' },
+  { id: 'biceps',       label: 'Bíceps',            icon: 'dumbbell' },
+  { id: 'triceps',      label: 'Tríceps',           icon: 'dumbbell' },
+  { id: 'forearms',     label: 'Antebrazos',        icon: 'hand' }
 ]
 
 const SEVERITY_LEVELS = [
@@ -78,18 +79,19 @@ function renderWellnessStep(content) {
     case 2: content.innerHTML = renderStep2(); break
     case 3: content.innerHTML = renderStep3(); break
   }
+  refreshIcons()
 }
 
 // ── Paso 1 — Selección de músculos ────────────────────────────
 function renderStep1() {
   return `
-    <h3 class="modal-title">❤️ Chequeo de bienestar</h3>
+    <h3 class="modal-title">${ic('heart')} Chequeo de bienestar</h3>
     <p class="modal-text">¿Qué músculos sientes adoloridos o con molestia?</p>
     <div class="wellness-muscles-grid">
       ${MUSCLES.map(m => `
         <button class="wellness-muscle ${_selectedMuscles.includes(m.id) ? 'selected' : ''}"
           onclick="wellnessToggleMuscle('${m.id}', this)">
-          <span class="wellness-muscle-icon">${m.icon}</span>
+          <span class="wellness-muscle-icon">${ic(m.icon)}</span>
           <span class="wellness-muscle-label">${m.label}</span>
         </button>
       `).join('')}
@@ -97,7 +99,7 @@ function renderStep1() {
     <div class="modal-actions">
       <button class="btn btn-ghost" onclick="closeWellnessModal()">Cancelar</button>
       <button class="btn btn-primary" onclick="wellnessNextStep()" ${_selectedMuscles.length === 0 ? 'disabled' : ''} id="wellness-next-1">
-        Siguiente →
+        Siguiente ${ic('arrow-right')}
       </button>
     </div>
   `
@@ -115,14 +117,14 @@ export function wellnessToggleMuscle(id, btn) {
 // ── Paso 2 — Intensidad ───────────────────────────────────────
 function renderStep2() {
   return `
-    <h3 class="modal-title">🔢 Intensidad del dolor</h3>
+    <h3 class="modal-title">${ic('hash')} Intensidad del dolor</h3>
     <p class="modal-text">Para cada músculo, indica la intensidad:</p>
     <div class="wellness-severity-list">
       ${_selectedMuscles.map(mid => {
         const m = MUSCLES.find(x => x.id === mid)
         return `
           <div class="wellness-severity-item">
-            <div class="wellness-severity-muscle">${m?.icon} ${m?.label}</div>
+            <div class="wellness-severity-muscle">${ic(m?.icon)} ${m?.label}</div>
             <div class="wellness-severity-options">
               ${SEVERITY_LEVELS.map(s => `
                 <button class="severity-btn ${_severities[mid] === s.id ? 'selected' : ''}"
@@ -137,8 +139,8 @@ function renderStep2() {
       }).join('')}
     </div>
     <div class="modal-actions">
-      <button class="btn btn-ghost" onclick="wellnessPrevStep()">← Atrás</button>
-      <button class="btn btn-primary" onclick="wellnessNextStep()">Ver plan de recuperación →</button>
+      <button class="btn btn-ghost" onclick="wellnessPrevStep()">${ic('arrow-left')} Atrás</button>
+      <button class="btn btn-primary" onclick="wellnessNextStep()">Ver plan de recuperación ${ic('arrow-right')}</button>
     </div>
   `
 }
@@ -155,7 +157,7 @@ export function wellnessSetSeverity(muscleId, severity, btn) {
 // ── Paso 3 — Plan de recuperación ────────────────────────────
 function renderStep3() {
   return `
-    <h3 class="modal-title">🩹 Plan de recuperación</h3>
+    <h3 class="modal-title">${ic('bandage')} Plan de recuperación</h3>
     <div class="recovery-plans">
       ${_selectedMuscles.map(mid => {
         const m        = MUSCLES.find(x => x.id === mid)
@@ -164,27 +166,27 @@ function renderStep3() {
         const meds     = MEDICATION[severity]
         return `
           <div class="recovery-item">
-            <h4 class="recovery-muscle-title">${m?.icon} ${m?.label} — ${SEVERITY_LEVELS.find(s => s.id === severity)?.label}</h4>
+            <h4 class="recovery-muscle-title">${ic(m?.icon)} ${m?.label} — ${SEVERITY_LEVELS.find(s => s.id === severity)?.label}</h4>
             <div class="recovery-tip">
-              <strong>🧊 Recuperación inmediata:</strong>
+              <strong>${ic('snowflake')} Recuperación inmediata:</strong>
               <p>${tips.immediate || 'Reposo relativo y movimiento suave.'}</p>
             </div>
             <div class="recovery-stretch">
-              <strong>🧘 Estiramiento:</strong>
+              <strong>${ic('person-standing')} Estiramiento:</strong>
               <p>${tips.stretch || 'Estira suavemente el área 2–3 veces al día.'}</p>
             </div>
             ${meds ? `
               <div class="recovery-meds ${severity === 3 ? 'meds-strong' : ''}">
-                <strong>💊 Medicación (${meds.warning})</strong>
+                <strong>${ic('pill')} Medicación (${meds.warning})</strong>
                 <p><em>${meds.name}</em> — ${meds.note}</p>
-                <p class="meds-warning">⚠️ Consulta a un médico antes de automedicarte.</p>
+                <p class="meds-warning">${ic('alert-triangle')} Consulta a un médico antes de automedicarte.</p>
               </div>
             ` : ''}
           </div>
         `
       }).join('')}
     </div>
-    <button class="btn btn-primary btn-full" onclick="closeWellnessModal()">Entendido ✓</button>
+    <button class="btn btn-primary btn-full" onclick="closeWellnessModal()">Entendido ${ic('check')}</button>
   `
 }
 

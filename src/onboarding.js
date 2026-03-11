@@ -4,6 +4,7 @@
 import { generatePlan } from './planner.js'
 import { getCycleWarning } from './planner.js'
 import { setPlanMeta, setPlanCache } from './storage.js'
+import { ic, refreshIcons } from './icons.js'
 
 const TOTAL_STEPS = 7
 let _step = 1
@@ -12,17 +13,17 @@ let _onComplete = null
 
 // ── Opciones de cada paso ─────────────────────────────────────
 const OBJECTIVES = [
-  { id: 'strength',    label: 'Ganar fuerza',       icon: '💪', desc: 'Cargas altas, pocas repeticiones (3–8 reps)' },
-  { id: 'muscle',      label: 'Ganar músculo',       icon: '🏋️', desc: 'Volumen e hipertrofia (6–15 reps)' },
-  { id: 'weight_loss', label: 'Perder peso',         icon: '🔥', desc: 'Circuitos metabólicos (12–20 reps)' },
-  { id: 'endurance',   label: 'Mejorar resistencia', icon: '🏃', desc: 'Alta resistencia (15–25 reps)' },
-  { id: 'general',     label: 'Condición general',   icon: '⚖️', desc: 'Equilibrio completo (8–15 reps)' }
+  { id: 'strength',    label: 'Ganar fuerza',       icon: 'dumbbell',      desc: 'Cargas altas, pocas repeticiones (3–8 reps)' },
+  { id: 'muscle',      label: 'Ganar músculo',       icon: 'biceps-flexed', desc: 'Volumen e hipertrofia (6–15 reps)' },
+  { id: 'weight_loss', label: 'Perder peso',         icon: 'flame',         desc: 'Circuitos metabólicos (12–20 reps)' },
+  { id: 'endurance',   label: 'Mejorar resistencia', icon: 'person-running',desc: 'Alta resistencia (15–25 reps)' },
+  { id: 'general',     label: 'Condición general',   icon: 'scale',         desc: 'Equilibrio completo (8–15 reps)' }
 ]
 
 const LEVELS = [
-  { id: 'beginner',     label: 'Principiante', icon: '🌱', desc: 'Menos de 1 año entrenando' },
-  { id: 'intermediate', label: 'Intermedio',   icon: '⚡', desc: '1–3 años de experiencia' },
-  { id: 'advanced',     label: 'Avanzado',     icon: '🏆', desc: 'Más de 3 años, técnica sólida' }
+  { id: 'beginner',     label: 'Principiante', icon: 'sprout',  desc: 'Menos de 1 año entrenando' },
+  { id: 'intermediate', label: 'Intermedio',   icon: 'zap',     desc: '1–3 años de experiencia' },
+  { id: 'advanced',     label: 'Avanzado',     icon: 'trophy',  desc: 'Más de 3 años, técnica sólida' }
 ]
 
 const DAYS = [1, 2, 3, 4, 5, 6]
@@ -35,17 +36,17 @@ const DURATIONS = [
 ]
 
 const ENVIRONMENTS = [
-  { id: 'none', label: 'Sin equipamiento', icon: '🧘', desc: 'Solo peso corporal' },
-  { id: 'home', label: 'Casa con equipo',  icon: '🏠', desc: 'Mancuernas, bandas, banco' },
-  { id: 'gym',  label: 'Gimnasio',         icon: '🏋️', desc: 'Acceso completo a máquinas y barras' }
+  { id: 'none', label: 'Sin equipamiento', icon: 'person-standing', desc: 'Solo peso corporal' },
+  { id: 'home', label: 'Casa con equipo',  icon: 'home',            desc: 'Mancuernas, bandas, banco' },
+  { id: 'gym',  label: 'Gimnasio',         icon: 'dumbbell',        desc: 'Acceso completo a máquinas y barras' }
 ]
 
 const SPLITS = [
-  { id: 'fullbody',     label: 'Full Body',            icon: '🔄', desc: 'Todo el cuerpo en cada sesión', types: 3 },
-  { id: 'upper',        label: 'Solo Tren Superior',   icon: '👆', desc: 'Pecho, espalda, hombros, brazos', types: 2 },
-  { id: 'lower',        label: 'Solo Tren Inferior',   icon: '👇', desc: 'Piernas, glúteo, core', types: 2 },
-  { id: 'upper_lower',  label: 'Superior + Inferior',  icon: '↕️', desc: 'Alternancia tren superior/inferior', types: 4 },
-  { id: 'ppl',          label: 'Push / Pull / Legs',   icon: '⚙️', desc: 'Empuje, jalón y piernas', types: 6 }
+  { id: 'fullbody',     label: 'Full Body',            icon: 'refresh-cw',    desc: 'Todo el cuerpo en cada sesión', types: 3 },
+  { id: 'upper',        label: 'Solo Tren Superior',   icon: 'arrow-up',      desc: 'Pecho, espalda, hombros, brazos', types: 2 },
+  { id: 'lower',        label: 'Solo Tren Inferior',   icon: 'arrow-down',    desc: 'Piernas, glúteo, core', types: 2 },
+  { id: 'upper_lower',  label: 'Superior + Inferior',  icon: 'arrows-up-down',desc: 'Alternancia tren superior/inferior', types: 4 },
+  { id: 'ppl',          label: 'Push / Pull / Legs',   icon: 'settings-2',    desc: 'Empuje, jalón y piernas', types: 6 }
 ]
 
 const WEEKS = [
@@ -87,6 +88,7 @@ function renderStep() {
   // Restaurar selecciones previas
   restoreSelections()
   updateNavButtons()
+  refreshIcons()
 
   // Actualizar aviso de ciclos en paso 6
   if (_step === 6) updateCycleWarning()
@@ -106,7 +108,7 @@ function updateNavButtons() {
   const btnNext = document.getElementById('ob-btn-next')
   if (btnBack) btnBack.classList.toggle('hidden', _step === 1)
   if (btnNext) {
-    btnNext.textContent = _step === TOTAL_STEPS ? '✓ Generar mi plan' : 'Siguiente →'
+    btnNext.innerHTML = _step === TOTAL_STEPS ? `${ic('check')} Generar mi plan` : `Siguiente ${ic('arrow-right')}`
     btnNext.className = _step === TOTAL_STEPS ? 'btn btn-success' : 'btn btn-primary'
   }
 }
@@ -119,7 +121,7 @@ function renderStep1() {
     <div class="ob-grid ob-grid-2">
       ${OBJECTIVES.map(o => `
         <button class="ob-option ob-multi" data-group="objectives" data-value="${o.id}" onclick="obToggleMulti(this)">
-          <span class="ob-option-icon">${o.icon}</span>
+          <span class="ob-option-icon">${ic(o.icon)}</span>
           <span class="ob-option-label">${o.label}</span>
           <span class="ob-option-desc">${o.desc}</span>
         </button>
@@ -135,7 +137,7 @@ function renderStep2() {
     <div class="ob-grid ob-grid-3">
       ${LEVELS.map(l => `
         <button class="ob-option ob-single" data-group="level" data-value="${l.id}" onclick="obSelectSingle(this)">
-          <span class="ob-option-icon">${l.icon}</span>
+          <span class="ob-option-icon">${ic(l.icon)}</span>
           <span class="ob-option-label">${l.label}</span>
           <span class="ob-option-desc">${l.desc}</span>
         </button>
@@ -181,7 +183,7 @@ function renderStep5() {
     <div class="ob-grid ob-grid-3">
       ${ENVIRONMENTS.map(e => `
         <button class="ob-option ob-single" data-group="environment" data-value="${e.id}" onclick="obSelectSingle(this)">
-          <span class="ob-option-icon">${e.icon}</span>
+          <span class="ob-option-icon">${ic(e.icon)}</span>
           <span class="ob-option-label">${e.label}</span>
           <span class="ob-option-desc">${e.desc}</span>
         </button>
@@ -197,7 +199,7 @@ function renderStep6() {
     <div class="ob-grid ob-grid-1">
       ${SPLITS.map(s => `
         <button class="ob-option ob-single ob-split" data-group="split" data-value="${s.id}" onclick="obSelectSingle(this)">
-          <span class="ob-option-icon">${s.icon}</span>
+          <span class="ob-option-icon">${ic(s.icon)}</span>
           <div class="ob-option-text">
             <span class="ob-option-label">${s.label}</span>
             <span class="ob-option-desc">${s.desc} · ${s.types} tipos de sesión</span>
@@ -277,7 +279,7 @@ function updateCycleWarning() {
 
   warningEl.classList.remove('hidden')
   warningEl.innerHTML = `
-    <div class="ob-warning-icon">⚠️</div>
+    <div class="ob-warning-icon">${ic('alert-triangle')}</div>
     <div>
       <strong>${days} días con ${warning.splitTypes} tipos de sesión</strong><br>
       ${warning.cycleDays} día(s)/semana ciclarán al inicio de los tipos de sesión.
@@ -285,6 +287,7 @@ function updateCycleWarning() {
       Para 6 días sin ciclos, usa Push/Pull/Legs (6 tipos).
     </div>
   `
+  refreshIcons()
 }
 
 function updateSessionPreview() {
@@ -353,7 +356,7 @@ function showObError(msg) {
 // ── Finalizar onboarding ──────────────────────────────────────
 async function finishOnboarding() {
   const btnNext = document.getElementById('ob-btn-next')
-  if (btnNext) { btnNext.disabled = true; btnNext.textContent = '⚙️ Generando plan...' }
+  if (btnNext) { btnNext.disabled = true; btnNext.innerHTML = `${ic('settings')} Generando plan...` }
 
   try {
     // Normalizar respuestas
@@ -379,7 +382,7 @@ async function finishOnboarding() {
 
   } catch (e) {
     console.error('Error generando plan:', e)
-    if (btnNext) { btnNext.disabled = false; btnNext.textContent = '✓ Generar mi plan' }
+    if (btnNext) { btnNext.disabled = false; btnNext.innerHTML = `${ic('check')} Generar mi plan` }
     showObError('Error al generar el plan. Intenta de nuevo.')
   }
 }

@@ -2,6 +2,7 @@
 // history.js — Historial de pesos registrados por ejercicio
 // ─────────────────────────────────────────────────────────────
 import { getAllExLogs } from './storage.js'
+import { ic, refreshIcons } from './icons.js'
 
 let _sortAsc = false
 let _searchTerm = ''
@@ -12,7 +13,7 @@ export function renderHistory() {
 
   view.innerHTML = `
     <div class="module-header">
-      <h2 class="module-title">📋 Historial de entrenamientos</h2>
+      <h2 class="module-title">${ic('clipboard-list')} Historial de entrenamientos</h2>
     </div>
     <div class="history-toolbar">
       <input type="text" id="history-search" class="form-input" placeholder="Buscar ejercicio o músculo..."
@@ -22,6 +23,7 @@ export function renderHistory() {
       ${buildHistoryTable()}
     </div>
   `
+  refreshIcons()
 }
 
 function buildHistoryTable() {
@@ -61,7 +63,7 @@ function buildHistoryTable() {
 
   if (rows.length === 0) {
     return `<div class="empty-state">
-      <div class="empty-icon">📋</div>
+      <div class="empty-icon">${ic('clipboard-list')}</div>
       <p>Aún no tienes registros. ¡Completa tu primera sesión!</p>
     </div>`
   }

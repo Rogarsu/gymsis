@@ -3,6 +3,7 @@
 // ─────────────────────────────────────────────────────────────
 import { getAllExLogs, getLogs } from './storage.js'
 import { getAllSessions } from './planner.js'
+import { ic, refreshIcons } from './icons.js'
 
 let _plan = null
 
@@ -16,34 +17,34 @@ export function renderReports() {
 
   view.innerHTML = `
     <div class="module-header">
-      <h2 class="module-title">📄 Reportes</h2>
+      <h2 class="module-title">${ic('file-text')} Reportes</h2>
       <p class="module-subtitle">Descarga tus datos en PDF para compartir con un entrenador o llevar un registro.</p>
     </div>
 
     <div class="reports-grid">
       <div class="report-card">
-        <div class="report-card-icon">📋</div>
+        <div class="report-card-icon">${ic('clipboard-list')}</div>
         <div class="report-card-info">
           <h3>Plan de Entrenamiento Completo</h3>
           <p>Todas las sesiones organizadas por fase, con ejercicios, series, reps, descanso, guía de peso y notas técnicas.</p>
         </div>
-        <button class="btn btn-primary" onclick="downloadPlanPDF()">⬇️ Descargar PDF</button>
+        <button class="btn btn-primary" onclick="downloadPlanPDF()">${ic('download')} Descargar PDF</button>
       </div>
 
       <div class="report-card">
-        <div class="report-card-icon">📊</div>
+        <div class="report-card-icon">${ic('bar-chart-2')}</div>
         <div class="report-card-info">
           <h3>Historial de Pesos</h3>
           <p>Progresión cronológica de todos tus ejercicios con indicadores de progreso y mejor marca.</p>
         </div>
-        <button class="btn btn-primary" onclick="downloadHistorialPDF()">⬇️ Descargar PDF</button>
+        <button class="btn btn-primary" onclick="downloadHistorialPDF()">${ic('download')} Descargar PDF</button>
       </div>
     </div>
 
     <div class="report-instructions">
-      <h3>📖 Cómo descargar</h3>
+      <h3>${ic('book-open')} Cómo descargar</h3>
       <ol>
-        <li>Toca el botón "⬇️ Descargar PDF"</li>
+        <li>Toca el botón "Descargar PDF"</li>
         <li>Se abrirá una nueva ventana con el contenido formateado</li>
         <li>Usa <strong>Ctrl+P</strong> (PC) o <strong>Cmd+P</strong> (Mac) para imprimir</li>
         <li>En "Destino" selecciona <strong>"Guardar como PDF"</strong></li>
@@ -51,6 +52,7 @@ export function renderReports() {
       </ol>
     </div>
   `
+  refreshIcons()
 }
 
 // ── PDF Plan de entrenamiento ─────────────────────────────────

@@ -3,6 +3,7 @@
 // ─────────────────────────────────────────────────────────────
 import { getBodyMetrics, addBodyMetric, getAllExLogs, getLogs, getMealsForDay, todayStr } from './storage.js'
 import { Chart } from 'chart.js/auto'
+import { ic, refreshIcons } from './icons.js'
 
 let _charts = {}
 let _plan = null
@@ -22,32 +23,32 @@ export function renderProgress() {
 
   view.innerHTML = `
     <div class="module-header">
-      <h2 class="module-title">📈 Mi Progreso</h2>
+      <h2 class="module-title">${ic('trending-up')} Mi Progreso</h2>
     </div>
 
     <!-- Métricas rápidas -->
     <div class="progress-metrics">
       <div class="metric-card">
-        <div class="metric-value">${streak.current}🔥</div>
+        <div class="metric-value">${streak.current} ${ic('flame')}</div>
         <div class="metric-label">Semanas seguidas</div>
       </div>
       <div class="metric-card">
-        <div class="metric-value">${streak.best}🏆</div>
+        <div class="metric-value">${streak.best} ${ic('trophy')}</div>
         <div class="metric-label">Mejor racha</div>
       </div>
       <div class="metric-card">
-        <div class="metric-value">${calcSessionsThisWeek(logs)}📅</div>
+        <div class="metric-value">${calcSessionsThisWeek(logs)} ${ic('calendar')}</div>
         <div class="metric-label">Sesiones esta semana</div>
       </div>
       <div class="metric-card">
-        <div class="metric-value">${calcNutritionDays()}🍃</div>
+        <div class="metric-value">${calcNutritionDays()} ${ic('leaf')}</div>
         <div class="metric-label">Días con nutrición</div>
       </div>
     </div>
 
     <!-- Peso corporal -->
     <div class="card">
-      <h3 class="card-title">⚖️ Peso corporal</h3>
+      <h3 class="card-title">${ic('scale')} Peso corporal</h3>
       <div class="weight-input-row">
         <input type="number" id="weight-input" class="form-input" step="0.1" placeholder="75.5" />
         <span class="weight-unit">kg</span>
@@ -65,7 +66,7 @@ export function renderProgress() {
 
     <!-- Medidas corporales -->
     <div class="card">
-      <h3 class="card-title">📏 Medidas corporales</h3>
+      <h3 class="card-title">${ic('ruler')} Medidas corporales</h3>
       <div class="measures-grid">
         <div class="form-group">
           <label class="form-label">Cintura (cm)</label>
@@ -88,13 +89,13 @@ export function renderProgress() {
           <input type="number" id="measure-thigh" class="form-input" step="0.5" />
         </div>
       </div>
-      <button class="btn btn-primary" onclick="saveMeasures()">✓ Guardar medidas</button>
+      <button class="btn btn-primary" onclick="saveMeasures()">${ic('check')} Guardar medidas</button>
       ${renderMeasuresTable(metrics)}
     </div>
 
     <!-- Progresión de ejercicios -->
     <div class="card">
-      <h3 class="card-title">💪 Progresión de ejercicios</h3>
+      <h3 class="card-title">${ic('dumbbell')} Progresión de ejercicios</h3>
       ${exLogs.length > 0 ? `
         <select class="form-input" onchange="renderExerciseChart(this.value)" id="ex-chart-select">
           ${getUniqueExercises(exLogs).map(ex => `<option value="${ex.id}">${ex.name}</option>`).join('')}
@@ -107,7 +108,7 @@ export function renderProgress() {
 
     <!-- Tendencia de bienestar -->
     <div class="card">
-      <h3 class="card-title">🌡️ Tendencia de bienestar</h3>
+      <h3 class="card-title">${ic('thermometer')} Tendencia de bienestar</h3>
       ${logs.filter(l => l.energy || l.fatigue).length >= 2 ? `
         <div class="chart-container">
           <canvas id="chart-wellness"></canvas>
@@ -117,13 +118,15 @@ export function renderProgress() {
 
     <!-- Notificaciones -->
     <div class="card">
-      <h3 class="card-title">🔔 Recordatorios de entrenamiento</h3>
+      <h3 class="card-title">${ic('bell')} Recordatorios de entrenamiento</h3>
       <div class="notification-actions">
         <button class="btn btn-secondary" onclick="enableNotifications()">Habilitar recordatorios</button>
         <button class="btn btn-ghost" onclick="sendTestNotification()">Enviar prueba</button>
       </div>
     </div>
   `
+
+  refreshIcons()
 
   // Renderizar gráficas
   requestAnimationFrame(() => {

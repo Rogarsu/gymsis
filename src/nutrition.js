@@ -2,6 +2,7 @@
 // nutrition.js — Módulo de nutrición y plan de comidas
 // ─────────────────────────────────────────────────────────────
 import { getFoodProfile, setFoodProfile, getMealsForDay, setMealsForDay, todayStr } from './storage.js'
+import { ic, refreshIcons } from './icons.js'
 
 // ── Horarios disponibles ──────────────────────────────────────
 const TRAINING_HOURS = [
@@ -97,17 +98,19 @@ export function renderNutrition() {
 
   if (!profile) {
     view.innerHTML = renderNutritionSetup()
+    refreshIcons()
     return
   }
 
   view.innerHTML = renderMealPlan(profile)
+  refreshIcons()
 }
 
 // Setup inicial del perfil
 function renderNutritionSetup() {
   return `
     <div class="module-header">
-      <h2 class="module-title">🍃 Configuración Nutricional</h2>
+      <h2 class="module-title">${ic('leaf')} Configuración Nutricional</h2>
       <p class="module-subtitle">Completa tu perfil para recibir un plan de comidas personalizado</p>
     </div>
     <div class="card">
@@ -168,7 +171,7 @@ function renderMealPlan(profile) {
 
   return `
     <div class="module-header">
-      <h2 class="module-title">🍃 Plan de Comidas</h2>
+      <h2 class="module-title">${ic('leaf')} Plan de Comidas</h2>
       <div class="module-header-actions">
         <button class="btn btn-ghost btn-sm" onclick="editNutritionProfile()">Editar perfil</button>
       </div>
@@ -177,7 +180,7 @@ function renderMealPlan(profile) {
     <!-- Hora de entrenamiento -->
     <div class="card">
       <div class="nutrition-time-row">
-        <label class="form-label">🕐 Hora de entrenamiento</label>
+        <label class="form-label">${ic('clock')} Hora de entrenamiento</label>
         <select class="form-input form-input-sm" onchange="updateTrainingHour(this.value)">
           ${TRAINING_HOURS.map(h => `<option value="${h}" ${h === selectedHour ? 'selected' : ''}>${h}</option>`).join('')}
         </select>
@@ -193,7 +196,7 @@ function renderMealPlan(profile) {
             <div class="meal-card-header">
               <div class="meal-info">
                 <span class="meal-time">${meal.time}</span>
-                <h3 class="meal-name">${meal.icon} ${meal.name}</h3>
+                <h3 class="meal-name">${ic(meal.icon)} ${meal.name}</h3>
                 <div class="meal-macros">
                   <span class="macro protein">P: ${meal.recipe.protein}g</span>
                   <span class="macro carbs">C: ${meal.recipe.carbs}g</span>
@@ -202,7 +205,7 @@ function renderMealPlan(profile) {
                 </div>
               </div>
               <button class="btn-mark ${isMarked ? 'marked' : ''}" onclick="toggleMealMark('${meal.id}', '${today}')">
-                ${isMarked ? '✓' : '○'}
+                ${isMarked ? ic('check') : ic('circle')}
               </button>
             </div>
             <details class="meal-recipe">
@@ -228,13 +231,13 @@ function buildMeals(profile) {
   const preHour = hour - 2
 
   return [
-    { id: 'breakfast', icon: '☀️', name: 'Desayuno',     time: '7:00–8:00', recipe: pickRecipe('breakfast', profile) },
-    { id: 'snack1',    icon: '🍎', name: 'Merienda 1',   time: '10:00–11:00', recipe: pickRecipe('snack1', profile) },
-    { id: 'preworkout',icon: '⚡', name: 'Pre-Entreno',  time: `${preHour}:00`, recipe: pickRecipe('preworkout', profile) },
-    { id: 'lunch',     icon: '🍽️', name: 'Almuerzo',     time: '13:00–14:00', recipe: pickRecipe('lunch', profile) },
-    { id: 'postworkout',icon:'💪', name: 'Post-Entreno', time: `${hour + 1}:00`, recipe: pickRecipe('postworkout', profile) },
-    { id: 'dinner',    icon: '🌙', name: 'Cena',         time: '20:00–21:00', recipe: pickRecipe('dinner', profile) },
-    { id: 'snack2',    icon: '🥛', name: 'Snack Nocturno',time: '22:00–23:00', recipe: pickRecipe('snack2', profile) }
+    { id: 'breakfast',  icon: 'sun',      name: 'Desayuno',      time: '7:00–8:00',    recipe: pickRecipe('breakfast', profile) },
+    { id: 'snack1',     icon: 'apple',    name: 'Merienda 1',    time: '10:00–11:00',  recipe: pickRecipe('snack1', profile) },
+    { id: 'preworkout', icon: 'zap',      name: 'Pre-Entreno',   time: `${preHour}:00`,recipe: pickRecipe('preworkout', profile) },
+    { id: 'lunch',      icon: 'utensils', name: 'Almuerzo',      time: '13:00–14:00',  recipe: pickRecipe('lunch', profile) },
+    { id: 'postworkout',icon: 'dumbbell', name: 'Post-Entreno',  time: `${hour + 1}:00`,recipe: pickRecipe('postworkout', profile) },
+    { id: 'dinner',     icon: 'moon',     name: 'Cena',          time: '20:00–21:00',  recipe: pickRecipe('dinner', profile) },
+    { id: 'snack2',     icon: 'milk',     name: 'Snack Nocturno',time: '22:00–23:00',  recipe: pickRecipe('snack2', profile) }
   ]
 }
 
@@ -267,6 +270,7 @@ export function editNutritionProfile() {
   const view = document.getElementById('view-nutricion')
   if (!view || !profile) return
   view.innerHTML = renderNutritionSetup()
+  refreshIcons()
   // Pre-rellenar valores
   const diet = document.getElementById('food-diet')
   const allergies = document.getElementById('food-allergies')
@@ -281,19 +285,19 @@ export function editNutritionProfile() {
 // ── Educación nutricional ─────────────────────────────────────
 function renderNutritionEducation() {
   const topics = [
-    { title: '🥩 Proteína y síntesis muscular', content: 'La proteína es el macronutriente más importante para la construcción muscular. Objetivo: 1.6–2.2g por kg de peso corporal. Fuentes: pollo, pavo, atún, huevos, yogur griego, legumbres. La síntesis proteica se eleva 24-48h post-entrenamiento.' },
-    { title: '🍚 Carbohidratos y energía', content: 'Los carbohidratos son el principal combustible para el entrenamiento de alta intensidad. Carbos complejos (avena, arroz integral, patata) para energía sostenida. Carbos simples (fruta, arroz blanco) post-entrenamiento para recuperación rápida.' },
-    { title: '🥑 Grasas saludables', content: 'Las grasas son esenciales para la producción hormonal (testosterona, estrógenos). Fuentes: aguacate, aceite de oliva, frutos secos, salmón. Objetivo: 20-30% de las calorías totales.' },
-    { title: '💧 Hidratación y electrolitos', content: 'Deshidratación del 2% reduce el rendimiento un 20%. Objetivo: 35–40 ml por kg de peso corporal al día. Durante el ejercicio: 500–700 ml por hora. Añade electrolitos en sesiones de más de 60 min.' },
-    { title: '⏰ Timing de nutrientes', content: 'Pre-entreno (90 min antes): carbos + proteína. Post-entreno (30 min): proteína + carbos simples. Antes de dormir: caseína o proteína lenta (yogur griego, queso cottage) para recuperación nocturna.' }
+    { icon: 'beef',        title: 'Proteína y síntesis muscular', content: 'La proteína es el macronutriente más importante para la construcción muscular. Objetivo: 1.6–2.2g por kg de peso corporal. Fuentes: pollo, pavo, atún, huevos, yogur griego, legumbres. La síntesis proteica se eleva 24-48h post-entrenamiento.' },
+    { icon: 'wheat',       title: 'Carbohidratos y energía', content: 'Los carbohidratos son el principal combustible para el entrenamiento de alta intensidad. Carbos complejos (avena, arroz integral, patata) para energía sostenida. Carbos simples (fruta, arroz blanco) post-entrenamiento para recuperación rápida.' },
+    { icon: 'salad',       title: 'Grasas saludables', content: 'Las grasas son esenciales para la producción hormonal (testosterona, estrógenos). Fuentes: aguacate, aceite de oliva, frutos secos, salmón. Objetivo: 20-30% de las calorías totales.' },
+    { icon: 'droplets',    title: 'Hidratación y electrolitos', content: 'Deshidratación del 2% reduce el rendimiento un 20%. Objetivo: 35–40 ml por kg de peso corporal al día. Durante el ejercicio: 500–700 ml por hora. Añade electrolitos en sesiones de más de 60 min.' },
+    { icon: 'alarm-clock', title: 'Timing de nutrientes', content: 'Pre-entreno (90 min antes): carbos + proteína. Post-entreno (30 min): proteína + carbos simples. Antes de dormir: caseína o proteína lenta (yogur griego, queso cottage) para recuperación nocturna.' }
   ]
 
   return `
     <div class="education-section">
-      <h3 class="education-title">📚 Fundamentos de Nutrición</h3>
+      <h3 class="education-title">${ic('book-open')} Fundamentos de Nutrición</h3>
       ${topics.map(t => `
         <details class="education-item">
-          <summary>${t.title}</summary>
+          <summary>${ic(t.icon)} ${t.title}</summary>
           <p>${t.content}</p>
         </details>
       `).join('')}

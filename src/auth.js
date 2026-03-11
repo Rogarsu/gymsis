@@ -6,6 +6,7 @@ import {
   sbOnAuthChange, isSupabaseConfigured
 } from './supabase.js'
 import { setUserId, clearUserId, getUserId } from './storage.js'
+import { ic, refreshIcons } from './icons.js'
 
 const GUEST_ID = 'guest_local'
 
@@ -43,10 +44,11 @@ function showSupabaseWarning() {
   const warn = document.createElement('div')
   warn.className = 'auth-supabase-warn'
   warn.innerHTML = `
-    <span>⚠️</span>
+    <span>${ic('alert-triangle')}</span>
     <span>Supabase no configurado — solo funcionará el modo local/invitado</span>
   `
   card.prepend(warn)
+  refreshIcons()
 }
 
 // ── Modo invitado ─────────────────────────────────────────────
