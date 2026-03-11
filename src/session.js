@@ -119,6 +119,15 @@ function getCompletedIds() {
 }
 
 // ── Vista de sesión ───────────────────────────────────────────
+const PHASE_DESCRIPTIONS = {
+  'Adaptación':      'Aprende los patrones de movimiento, establece la base neuromuscular y comienza el hábito. Pesos moderados, técnica perfecta.',
+  'Desarrollo':      'Incrementa la carga de forma progresiva. El foco es la sobrecarga mecánica y acumular volumen de trabajo.',
+  'Intensificación': 'Trabaja con alta intensidad. Pocas repeticiones, pesos máximos. Maximiza fuerza e hipertrofia.',
+  'Deload':          'Semana de descarga activa. Reduce volumen e intensidad para recuperar y consolidar las adaptaciones.'
+}
+
+const LEVEL_LABELS = { beginner: 'Básico', intermediate: 'Medio', advanced: 'Avanzado' }
+
 function renderSessionView(session) {
   const view = document.getElementById('session-view')
   if (!view) return
@@ -127,12 +136,59 @@ function renderSessionView(session) {
   const isCompleted = logs.includes(session.id)
   const startTs = getSessionStart(session.id)
 
+  // Phase data
+  const phase = _plan?.phases.find(p => p.number === session.phase)
+  const meta  = _plan?.meta || {}
+  const phaseShortName = phase?.name?.split('—')[1]?.trim() || phase?.name || ''
+  const phaseDesc = PHASE_DESCRIPTIONS[phaseShortName] || ''
+
+  // Week range for this phase
+  let startWeek = 1
+  for (const p of _plan?.phases || []) {
+    if (p.number === phase?.number) break
+    startWeek += p.weeks
+  }
+  const endWeek = startWeek + (phase?.weeks ?? 0) - 1
+
+  // Completed in this phase
+  const logSet = new Set(logs)
+  const doneInPhase  = phase?.sessions.filter(s => logSet.has(s.id)).length ?? 0
+  const totalInPhase = phase?.sessions.length ?? 0
+
+  // Session badges
+  const levelLabel = LEVEL_LABELS[meta.level] || meta.level || ''
+  const duration   = meta.duration || '60'
+  const phaseNum   = session.phase || 1
+
   view.innerHTML = `
+    ${phase ? `
+    <div class="phase-info-card phase-color-${phaseNum}">
+      <span class="phase-info-label">FASE ${phaseNum}</span>
+      <h3 class="phase-info-title">${phaseShortName}</h3>
+      ${phaseDesc ? `<p class="phase-info-desc">${phaseDesc}</p>` : ''}
+      <div class="phase-info-stats">
+        <div class="phase-info-stat">
+          <span class="phase-info-value">Semanas ${startWeek}–${endWeek}</span>
+          <span class="phase-info-stat-label">Duración</span>
+        </div>
+        <div class="phase-info-stat">
+          <span class="phase-info-value">${doneInPhase}/${totalInPhase}</span>
+          <span class="phase-info-stat-label">Completadas</span>
+        </div>
+      </div>
+    </div>
+    ` : ''}
+
     <div class="session-header">
       <div class="session-header-info">
-        <span class="session-phase-badge">Fase ${session.phase}</span>
-        <h2 class="session-title">${session.name}</h2>
-        <span class="session-num-badge">Sesión ${session.number}</span>
+        <span class="session-num-badge">Sesión ${String(session.number).padStart(2,'0')} · Fase ${phaseNum}</span>
+        <h2 class="session-title">Sesión ${String(session.number).padStart(2,'0')} — ${session.name}</h2>
+        <div class="session-badges">
+          <span class="session-badge sbadge-phase${phaseNum}">Fase ${phaseNum}</span>
+          ${levelLabel ? `<span class="session-badge sbadge-level">${levelLabel}</span>` : ''}
+          <span class="session-badge sbadge-neutral">${ic('timer')} ${duration} min</span>
+          <span class="session-badge sbadge-neutral">${session.name}</span>
+        </div>
       </div>
       <div class="session-header-actions">
         ${isCompleted
@@ -183,7 +239,7 @@ function renderSessionView(session) {
     <!-- Tab: Entreno -->
     <div class="tab-panel hidden" id="panel-workout">
       <div class="workout-toolbar">
-        <button class="btn btn-secondary" onclick="startGuidedMode('${session.id}')">${ic('play')} Modo guiado</button>
+        <button class="btn btn-guided" onclick="startGuidedMode('${session.id}')">${ic('play')} Modo guiado</button>
       </div>
       ${renderExerciseTable(session)}
     </div>
@@ -745,7 +801,7 @@ function refreshExerciseRow(exId, sessionId) {
       if (workoutTable) {
         view.innerHTML = `
           <div class="workout-toolbar">
-            <button class="btn btn-secondary" onclick="startGuidedMode('${sessionId}')">${ic('play')} Modo guiado</button>
+            <button class="btn btn-guided" onclick="startGuidedMode('${sessionId}')">${ic('play')} Modo guiado</button>
           </div>
           ${renderExerciseTable(session)}
         `
