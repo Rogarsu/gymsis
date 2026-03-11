@@ -226,10 +226,11 @@ function difficultyScore(ex, phaseKey, userLevel) {
 }
 
 // ── Seleccionar ejercicios para un bloque ─────────────────────
-// planUsedCounts: Map<exId, usageCount> — rastrea uso en todo el plan para rotar
-// weekUsedIds:   Set<exId>             — evita repetir dentro de la misma semana
-// sessionIndex:  número de sesión global (para desempate pseudo-aleatorio)
-function pickExercises(muscle, count, environment, level, planUsedCounts, weekUsedIds, phaseKey, objectives, sessionIndex) {
+// planUsedCounts:        Map<exId, usageCount> — rastrea uso en todo el plan para rotar
+// weekUsedIds:           Set<exId>             — evita repetir dentro de la misma semana
+// sessionMovementPatterns: Set<string>         — penaliza patrones de movimiento repetidos en la sesión
+// sessionIndex:          número de sesión global (para desempate pseudo-aleatorio)
+function pickExercises(muscle, count, environment, level, planUsedCounts, weekUsedIds, phaseKey, objectives, sessionIndex, sessionMovementPatterns) {
   const mainObj = resolveObjective(objectives)
   const isHypertrophyOrStrength = ['muscle', 'strength'].includes(mainObj)
 
@@ -243,9 +244,10 @@ function pickExercises(muscle, count, environment, level, planUsedCounts, weekUs
   // 3. Ordenar por criterios combinados:
   //    (a) compuestos primero
   //    (b) no usado esta semana
-  //    (c) dificultad apropiada para la fase
-  //    (d) penalización por uso excesivo en el plan
-  //    (e) desempate con sessionIndex para rotar semana a semana
+  //    (c) patrón de movimiento no repetido en la sesión
+  //    (d) dificultad apropiada para la fase
+  //    (e) penalización por uso excesivo en el plan
+  //    (f) desempate con sessionIndex para rotar semana a semana
   pool.sort((a, b) => {
     // [1] Tipo: compuesto > aislamiento
     const aComp = a.type === 'compound' ? 0 : 1
@@ -257,30 +259,37 @@ function pickExercises(muscle, count, environment, level, planUsedCounts, weekUs
     const bWeek = weekUsedIds.has(b.id) ? 1 : 0
     if (aWeek !== bWeek) return aWeek - bWeek
 
-    // [3] Penalización por uso excesivo (>3 veces → penalización exponencial)
+    // [3] Penalizar patrón de movimiento repetido en la sesión actual
+    if (sessionMovementPatterns) {
+      const aRepeat = (a.movementPattern && sessionMovementPatterns.has(a.movementPattern)) ? 1 : 0
+      const bRepeat = (b.movementPattern && sessionMovementPatterns.has(b.movementPattern)) ? 1 : 0
+      if (aRepeat !== bRepeat) return aRepeat - bRepeat
+    }
+
+    // [4] Penalización por uso excesivo (>3 veces → penalización exponencial)
     const aRaw = planUsedCounts.get(a.id) || 0
     const bRaw = planUsedCounts.get(b.id) || 0
     const aPenalty = aRaw >= 3 ? aRaw * 5 : aRaw
     const bPenalty = bRaw >= 3 ? bRaw * 5 : bRaw
     if (aPenalty !== bPenalty) return aPenalty - bPenalty
 
-    // [4] Dificultad apropiada para la fase
+    // [5] Dificultad apropiada para la fase
     const aDiff = difficultyScore(a, phaseKey, level)
     const bDiff = difficultyScore(b, phaseKey, level)
     if (aDiff !== bDiff) return aDiff - bDiff
 
-    // [5] Para hipertrofia/fuerza: preferir lengthened load
+    // [6] Para hipertrofia/fuerza: preferir lengthened load
     if (isHypertrophyOrStrength && phaseKey !== 'deload') {
       const aLen = a.isLengthenedLoad ? 0 : 1
       const bLen = b.isLengthenedLoad ? 0 : 1
       if (aLen !== bLen) return aLen - bLen
     }
 
-    // [6] Desempate rotativo por sessionIndex
+    // [7] Desempate rotativo por sessionIndex
     return (a.id.charCodeAt(0) + sessionIndex) % 5 - 2
   })
 
-  // 6. Seleccionar 'count' ejercicios únicos
+  // Seleccionar 'count' ejercicios únicos
   const selected = []
   for (const ex of pool) {
     if (selected.length >= count) break
@@ -288,6 +297,9 @@ function pickExercises(muscle, count, environment, level, planUsedCounts, weekUs
       selected.push(ex)
       weekUsedIds.add(ex.id)
       planUsedCounts.set(ex.id, (planUsedCounts.get(ex.id) || 0) + 1)
+      if (sessionMovementPatterns && ex.movementPattern) {
+        sessionMovementPatterns.add(ex.movementPattern)
+      }
     }
   }
 
@@ -324,6 +336,12 @@ function buildSessionExercise(ex, phaseKey, objectives, environment, level, posi
     // Sets from method
     const baseSets = ex.type === 'compound' ? methodConfig.sets.compound : methodConfig.sets.isolation
     numSets = phaseKey === 'deload' ? Math.max(2, Math.round(baseSets * 0.6)) : baseSets
+
+    // Isolation exercises get higher rep ranges (+4 each end) except pure_strength
+    if (ex.type === 'isolation' && methodConfig.id !== 'pure_strength') {
+      const parts = reps.split('-').map(Number)
+      if (parts.length === 2) reps = `${parts[0] + 4}-${parts[1] + 4}`
+    }
   } else {
     // Legacy fallback
     const ranges = REP_RANGES[mainObj] || REP_RANGES.general
@@ -345,6 +363,7 @@ function buildSessionExercise(ex, phaseKey, objectives, environment, level, posi
     muscle: ex.muscle,
     equipment: ex.equipment.join(', ') || 'Peso corporal',
     type: ex.type,
+    movementPattern: ex.movementPattern || '',
     block: ex.block || ex.muscle,
     sets: numSets,
     reps,
@@ -432,13 +451,17 @@ export function generatePlan(answers) {
       const basePerBlock = Math.floor(exPerSession / blocks.length)
       let extra = exPerSession - basePerBlock * blocks.length
 
+      // Rastrear patrones de movimiento usados en esta sesión (evita 3× horizontal push, etc.)
+      const sessionMovementPatterns = new Set()
+
       for (const muscle of blocks) {
         const count = basePerBlock + (extra > 0 ? (extra--, 1) : 0)
         if (count <= 0) continue
 
         const exercises = pickExercises(
           muscle, count, environment, level,
-          planUsedCounts, weekUsedIds, phase.phaseKey, objectives, sessionCounter
+          planUsedCounts, weekUsedIds, phase.phaseKey, objectives, sessionCounter,
+          sessionMovementPatterns
         )
 
         for (const ex of exercises) {
