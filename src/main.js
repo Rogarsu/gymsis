@@ -22,10 +22,12 @@ import { openWellnessCheck, closeWellnessModal, wellnessToggleMuscle,
          wellnessNextStep, wellnessPrevStep, wellnessSetSeverity } from './wellness.js'
 import { initReports, renderReports, downloadPlanPDF, downloadHistorialPDF } from './reports.js'
 import { getPlanCache, setPlanCache, setPlanMeta, getPlanMeta, clearAllUserData,
-         clearProgressData, getLogs, getAllExLogs, addBodyMetric, todayStr,
-         setUserId, getUserId } from './storage.js'
+         clearProgressData, getLogs, getAllExLogs, addBodyMetric, getBodyMetrics,
+         getMealsForDay, todayStr, setUserId, getUserId } from './storage.js'
 import { sbGetPlan, sbUpsertPlan, sbGetSessionLogs, sbUpsertSessionLog,
          sbGetExLogs, sbUpsertExLog, sbGetUserPrefs, sbUpsertUserPrefs,
+         sbUpsertBodyMetric, sbGetBodyMetrics,
+         sbUpsertNutritionLog, sbGetNutritionLogs,
          sbDeletePlan, sbDeleteSessionLogs, sbDeleteExLogs, sbGetUser,
          sbOnAuthChange, isSupabaseConfigured } from './supabase.js'
 import { generatePlan } from './planner.js'
@@ -64,23 +66,23 @@ function exposeGlobals() {
   window.togglePreCheck      = togglePreCheck
   window.openExModal         = openExModal
   window.closeExModal        = closeExModal
-  window.completeCurrentSerie= completeCurrentSerie
+  window.completeCurrentSerie= (...a) => { completeCurrentSerie(...a); scheduleExLogSync() }
   window.inlineTimerAdjust   = inlineTimerAdjust
   window.skipInlineTimer     = skipInlineTimer
   window.floatTimerAdjust    = floatTimerAdjust
   window.floatTimerSkip      = floatTimerSkip
   window.openLogForm         = openLogForm
   window.closeLogModal       = closeLogModal
-  window.saveLog             = saveLog
+  window.saveLog             = () => { saveLog(); if (_user?.id) syncToCloud(_user.id) }
   window.openSwapModal       = openSwapModal
   window.closeSwapModal      = closeSwapModal
   window.applySwap           = applySwap
   window.revertSwap          = revertSwap
   window.updateEditSet       = updateEditSet
-  window.saveEditedSets      = saveEditedSets
+  window.saveEditedSets      = (...a) => { saveEditedSets(...a); scheduleExLogSync() }
   window.startGuidedMode     = startGuidedMode
   window.closeGuidedMode     = closeGuidedMode
-  window.completeGuidedSerie = completeGuidedSerie
+  window.completeGuidedSerie = (...a) => { completeGuidedSerie(...a); scheduleExLogSync() }
   window.guidedTimerAdjust   = guidedTimerAdjust
   window.skipGuidedTimer     = skipGuidedTimer
   window.skipGuidedRest      = skipGuidedRest
@@ -343,22 +345,44 @@ function resetProgress() {
 async function syncFromCloud(userId) {
   if (!isSupabaseConfigured() || !userId) return
   try {
-    // Descargar session logs
+    // Session logs
     const cloudLogs = await sbGetSessionLogs(userId)
     if (cloudLogs.length > 0) {
-      const localLogs = getLogs()
-      const merged = mergeLogs(localLogs, cloudLogs)
+      const merged = mergeLogs(getLogs(), cloudLogs)
       localStorage.setItem('sv_logs', JSON.stringify(merged))
     }
 
-    // Descargar exercise logs
+    // Exercise logs
     const cloudExLogs = await sbGetExLogs(userId)
     cloudExLogs.forEach(log => {
       if (log.exId && log.sessionId) {
         const key = `sv_ex_${log.exId}_${log.sessionId}`
-        if (!localStorage.getItem(key)) {
-          localStorage.setItem(key, JSON.stringify(log))
-        }
+        if (!localStorage.getItem(key)) localStorage.setItem(key, JSON.stringify(log))
+      }
+    })
+
+    // Body metrics
+    const cloudMetrics = await sbGetBodyMetrics(userId)
+    cloudMetrics.forEach(m => {
+      if (m.date) {
+        const key = 'sv_body_metrics'
+        try {
+          const local = JSON.parse(localStorage.getItem(key) || '[]')
+          if (!local.find(x => x.date === m.date)) {
+            local.push(m)
+            local.sort((a, b) => a.date.localeCompare(b.date))
+            localStorage.setItem(key, JSON.stringify(local))
+          }
+        } catch {}
+      }
+    })
+
+    // Nutrition logs
+    const cloudNutrition = await sbGetNutritionLogs(userId)
+    cloudNutrition.forEach(({ date, meals_data }) => {
+      if (date && meals_data) {
+        const key = `sv_meal_${date}`
+        if (!localStorage.getItem(key)) localStorage.setItem(key, JSON.stringify(meals_data))
       }
     })
   } catch (e) {
@@ -370,19 +394,31 @@ async function syncToCloud(userId) {
   if (!isSupabaseConfigured() || !userId) return
   showConnectionBanner('syncing')
   try {
-    // Subir plan
+    // Plan
     if (_plan) await sbUpsertPlan(userId, _plan)
 
-    // Subir session logs
-    const logs = getLogs()
-    for (const log of logs) {
-      await sbUpsertSessionLog(userId, log)
-    }
+    // Session logs
+    for (const log of getLogs()) await sbUpsertSessionLog(userId, log)
 
-    // Subir exercise logs
-    const exLogs = getAllExLogs()
-    for (const log of exLogs) {
-      await sbUpsertExLog(userId, log)
+    // Exercise logs
+    for (const log of getAllExLogs()) await sbUpsertExLog(userId, log)
+
+    // Body metrics
+    for (const m of getBodyMetrics()) await sbUpsertBodyMetric(userId, m)
+
+    // Nutrition logs (last 90 days)
+    const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - 90)
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i)
+      if (key?.startsWith('sv_meal_')) {
+        const date = key.replace('sv_meal_', '')
+        if (new Date(date) >= cutoff) {
+          try {
+            const meals = JSON.parse(localStorage.getItem(key))
+            if (meals) await sbUpsertNutritionLog(userId, date, meals)
+          } catch {}
+        }
+      }
     }
 
     showConnectionBanner('synced')
@@ -390,6 +426,18 @@ async function syncToCloud(userId) {
     console.warn('Error al sincronizar:', e)
     showConnectionBanner('offline')
   }
+}
+
+// Sync inmediato solo de exercise logs (debounced, para no saturar en cada serie)
+let _exSyncTimer = null
+function scheduleExLogSync() {
+  if (!_user?.id || !isSupabaseConfigured()) return
+  clearTimeout(_exSyncTimer)
+  _exSyncTimer = setTimeout(async () => {
+    try {
+      for (const log of getAllExLogs()) await sbUpsertExLog(_user.id, log)
+    } catch (e) { console.warn('Error sincronizando exercise logs:', e) }
+  }, 3000)
 }
 
 function mergeLogs(local, cloud) {
