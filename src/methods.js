@@ -193,28 +193,48 @@ export function assignMethod(answers) {
 
   let methodId
 
-  // Beginners → always Linear Progression regardless of goal
+  // ── Principiantes ─────────────────────────────────────────
+  // Respetan su meta para fat_loss/recomp; para todo lo demás
+  // la progresión lineal construye la base neuromuscular primero.
   if (experience === 'beginner') {
-    methodId = 'linear_progression'
+    if (objective === 'fat_loss' || bodyComposition === 'overweight') {
+      methodId = 'fat_loss'       // 15-20 reps, descansos cortos — respeta la meta
+    } else if (objective === 'recomp') {
+      methodId = 'recomp'         // rango mixto — respeta la meta
+    } else {
+      methodId = 'linear_progression' // strength/muscle/endurance/general → base primero
+    }
   }
-  // Strength goal
+  // ── Fuerza (intermedio + avanzado) ────────────────────────
+  // pure_strength desde intermedio: el rango 1-5 reps con alta carga
+  // es exactamente lo que necesita alguien con objetivo de fuerza.
   else if (objective === 'strength') {
-    methodId = experience === 'advanced' ? 'pure_strength' : 'linear_progression'
+    methodId = 'pure_strength'
   }
-  // Muscle/hypertrophy goal
+  // ── Músculo/hipertrofia ────────────────────────────────────
   else if (objective === 'muscle') {
-    const goodRecovery = sleep === 'good' && stress !== 'high'
-    methodId = (experience === 'advanced' && goodRecovery) ? 'dup' : 'hypertrophy'
+    if (bodyComposition === 'overweight') {
+      // Sobrepeso + músculo → recomp: perder grasa y ganar músculo a la vez
+      methodId = 'recomp'
+    } else {
+      const goodRecovery = sleep === 'good' && stress !== 'high'
+      methodId = (experience === 'advanced' && goodRecovery) ? 'dup' : 'hypertrophy'
+    }
   }
-  // Fat loss goal OR overweight body composition
+  // ── Pérdida de grasa ──────────────────────────────────────
   else if (objective === 'fat_loss' || bodyComposition === 'overweight') {
     methodId = 'fat_loss'
   }
-  // Body recomposition
+  // ── Recomposición corporal ────────────────────────────────
   else if (objective === 'recomp') {
     methodId = 'recomp'
   }
-  // Endurance or general health → hypertrophy with moderate volume
+  // ── Resistencia muscular ──────────────────────────────────
+  // fat_loss = alto volumen + descansos cortos = endurance metabólica
+  else if (objective === 'endurance') {
+    methodId = 'fat_loss'
+  }
+  // ── Salud general ─────────────────────────────────────────
   else {
     methodId = 'hypertrophy'
   }
@@ -275,17 +295,30 @@ export function applyModifiers(methodId, modifiers) {
 
 const METHOD_REASONS = {
   linear_progression: (a) => {
-    if (a.experience === 'beginner') return `Eres principiante — y eso es una ventaja enorme. En esta etapa tu cuerpo responde a casi cualquier estímulo. La Progresión Lineal te permite progresar en CADA sesión, algo imposible para alguien con años de experiencia.`
-    return `Con tu objetivo de fuerza y nivel intermedio, la Progresión Lineal construye la base técnica y de fuerza que necesitas antes de pasar a métodos más avanzados.`
+    return `Eres principiante — y eso es una ventaja enorme. En esta etapa tu cuerpo responde a casi cualquier estímulo. La Progresión Lineal te permite progresar en CADA sesión, algo imposible para alguien con años de experiencia. Primero construimos la base técnica y neuromuscular.`
   },
-  pure_strength: (a) => `Tienes experiencia avanzada y tu objetivo es la fuerza máxima. Las cargas del 85–100% de tu 1RM activan el máximo reclutamiento de unidades motoras y producen adaptaciones neurales que métodos de más reps no logran.`,
-  hypertrophy: (a) => `El rango 6–12 reps es el más respaldado científicamente para la hipertrofia (Schoenfeld, 2010). Con tu experiencia ${a.experience === 'intermediate' ? 'intermedia' : ''} y meta de ganar músculo, este es el método con mejor relación esfuerzo-resultado.`,
-  dup: (a) => `Tienes experiencia avanzada, buena recuperación y quieres ganar músculo. La Periodización Ondulante previene la adaptación variando el estímulo cada sesión. Es el método con mayor evidencia científica en atletas avanzados.`,
+  pure_strength: (a) => {
+    if (a.experience === 'intermediate') return `Tu objetivo es la fuerza y ya tienes base técnica. El rango 1–5 reps con cargas del 85–100% de tu máximo activa el reclutamiento máximo de unidades motoras y genera adaptaciones neurales que rangos de más repeticiones no logran.`
+    return `Tienes experiencia avanzada y tu objetivo es la fuerza máxima. Las cargas del 85–100% de tu 1RM producen adaptaciones neurales profundas — densidad ósea, sincronización de unidades motoras y fuerza real que se transfiere a cualquier actividad.`
+  },
+  hypertrophy: (a) => {
+    const expLabel = a.experience === 'intermediate' ? 'intermedia' : 'avanzada'
+    return `El rango 6–12 reps es el más respaldado científicamente para la hipertrofia (Schoenfeld, 2010). Con tu experiencia ${expLabel} y meta de ganar músculo, este método ofrece la mejor relación entre tensión mecánica, estrés metabólico y daño muscular.`
+  },
+  dup: (a) => `Tienes experiencia avanzada, buena recuperación y quieres ganar músculo. La Periodización Ondulante previene la adaptación variando el estímulo cada sesión: un día de fuerza, uno de hipertrofia, uno de resistencia. Es el método con mayor evidencia en atletas avanzados.`,
   fat_loss: (a) => {
-    if (a.bodyComposition === 'overweight') return `Tu composición corporal actual y tu objetivo indican que la prioridad es reducir grasa preservando músculo. Los descansos cortos y alto volumen maximizan el gasto calórico y el efecto EPOC (quema calórica post-entreno).`
-    return `Tu objetivo principal es perder grasa. El método metabólico con descansos cortos maximiza el gasto calórico durante y después del entreno, preservando la masa muscular.`
+    if (a.experience === 'beginner' && (a.objective === 'fat_loss' || a.bodyComposition === 'overweight')) {
+      return `Tu meta es perder grasa y como principiante tienes una ventaja: tu cuerpo responde muy fuerte al estímulo nuevo. El método metabólico con descansos cortos maximiza el gasto calórico en cada sesión y genera el efecto EPOC (quema de calorías hasta 24h post-entreno).`
+    }
+    if (a.bodyComposition === 'overweight') return `Tu composición corporal y tu objetivo apuntan a la misma dirección: reducir grasa preservando músculo. Los descansos cortos y el alto volumen de repeticiones maximizan el gasto calórico y el efecto EPOC (quema calórica post-entreno).`
+    if (a.objective === 'endurance') return `Para resistencia muscular, el método metabólico es el más adecuado: alto volumen de reps (15–20) con descansos cortos mejora la capacidad aeróbica-muscular, la densidad mitocondrial y la resistencia a la fatiga.`
+    return `Tu objetivo es perder grasa. El método metabólico con descansos cortos maximiza el gasto calórico durante y después del entreno, preservando la masa muscular existente.`
   },
-  recomp: (a) => `Quieres perder grasa Y ganar músculo. La recomposición es más lenta que especializarse en una sola meta, pero es posible con este método, especialmente si mantienes proteína alta y calorías de mantenimiento.`
+  recomp: (a) => {
+    if (a.experience === 'beginner') return `Quieres perder grasa y ganar músculo. Como principiante, la recomposición es más viable para ti que para alguien avanzado — tu cuerpo aún no está adaptado y responde a ambos estímulos simultáneamente con la nutrición correcta.`
+    if (a.bodyComposition === 'overweight') return `Tienes masa muscular para desarrollar y grasa para reducir. La recomposición corporal es el camino ideal: estimulas crecimiento muscular mientras el déficit calórico moderado reduce grasa. Requiere proteína alta y consistencia.`
+    return `Quieres perder grasa Y ganar músculo simultáneamente. La recomposición es más lenta que especializarse en una sola meta, pero es el método más completo a largo plazo. Requiere calorías de mantenimiento y proteína alta (2.0–2.4 g/kg).`
+  }
 }
 
 export function generateProfileSummary(answers, methodId, modifiers, effectiveMethod) {
