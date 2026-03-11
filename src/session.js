@@ -121,7 +121,9 @@ function getCompletedIds() {
 }
 
 // ── Vista de sesión ───────────────────────────────────────────
-const PHASE_DESCRIPTIONS = {
+// Phase descriptions now come from plan.phases[n].description (set by planner.js)
+// Kept as fallback for plans generated before this update
+const PHASE_DESCRIPTIONS_FALLBACK = {
   'Adaptación':      'Aprende los patrones de movimiento, establece la base neuromuscular y comienza el hábito. Pesos moderados, técnica perfecta.',
   'Desarrollo':      'Incrementa la carga de forma progresiva. El foco es la sobrecarga mecánica y acumular volumen de trabajo.',
   'Intensificación': 'Trabaja con alta intensidad. Pocas repeticiones, pesos máximos. Maximiza fuerza e hipertrofia.',
@@ -142,7 +144,7 @@ function renderSessionView(session) {
   const phase = _plan?.phases.find(p => p.number === session.phase)
   const meta  = _plan?.meta || {}
   const phaseShortName = phase?.name?.split('—')[1]?.trim() || phase?.name || ''
-  const phaseDesc = PHASE_DESCRIPTIONS[phaseShortName] || ''
+  const phaseDesc = phase?.description || PHASE_DESCRIPTIONS_FALLBACK[phaseShortName] || ''
 
   // Week range for this phase
   let startWeek = 1
@@ -1046,6 +1048,7 @@ function renderGuidedExercise(session) {
     ${planEx.notes ? `<p class="modal-ex-notes">${ic('lightbulb')} ${planEx.notes}</p>` : ''}
     <div class="rec-box">
       <strong>Peso recomendado:</strong> ${formatRecommendation(rec)}
+      ${_plan?.meta?.rpeNote ? `<p class="rec-rpe-note">${ic('info')} ${_plan.meta.rpeNote}</p>` : ''}
     </div>
     <div id="guided-sets-container"></div>
     <div id="guided-serie-input">

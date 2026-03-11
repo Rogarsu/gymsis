@@ -97,11 +97,11 @@ const SPLIT_TEMPLATES = {
   upper: [
     {
       name: 'Tren Superior A',
-      blocks: ['Pecho', 'Espalda', 'Hombros', 'Tríceps']
+      blocks: ['Pecho', 'Espalda', 'Hombros', 'Tríceps', 'Core']
     },
     {
       name: 'Tren Superior B',
-      blocks: ['Espalda', 'Pecho', 'Hombros', 'Bíceps']
+      blocks: ['Espalda', 'Pecho', 'Hombros', 'Bíceps', 'Core']
     }
   ],
   lower: [
@@ -117,7 +117,7 @@ const SPLIT_TEMPLATES = {
   upper_lower: [
     {
       name: 'Superior A',
-      blocks: ['Pecho', 'Espalda', 'Hombros', 'Tríceps']
+      blocks: ['Pecho', 'Espalda', 'Hombros', 'Tríceps', 'Core']
     },
     {
       name: 'Inferior A',
@@ -125,7 +125,7 @@ const SPLIT_TEMPLATES = {
     },
     {
       name: 'Superior B',
-      blocks: ['Espalda', 'Pecho', 'Hombros', 'Bíceps']
+      blocks: ['Espalda', 'Pecho', 'Hombros', 'Bíceps', 'Core']
     },
     {
       name: 'Inferior B',
@@ -135,11 +135,11 @@ const SPLIT_TEMPLATES = {
   ppl: [
     {
       name: 'Push A (Empuje)',
-      blocks: ['Pecho', 'Hombros', 'Tríceps']
+      blocks: ['Pecho', 'Hombros', 'Tríceps', 'Core']
     },
     {
       name: 'Pull A (Jalón)',
-      blocks: ['Espalda', 'Bíceps']
+      blocks: ['Espalda', 'Bíceps', 'Core']
     },
     {
       name: 'Legs A (Piernas)',
@@ -147,11 +147,11 @@ const SPLIT_TEMPLATES = {
     },
     {
       name: 'Push B (Empuje)',
-      blocks: ['Hombros', 'Pecho', 'Tríceps']
+      blocks: ['Hombros', 'Pecho', 'Tríceps', 'Core']
     },
     {
       name: 'Pull B (Jalón)',
-      blocks: ['Espalda', 'Bíceps', 'Espalda']
+      blocks: ['Espalda', 'Bíceps', 'Core']
     },
     {
       name: 'Legs B (Piernas)',
@@ -161,26 +161,33 @@ const SPLIT_TEMPLATES = {
 }
 
 // ── Fases por duración del plan ──────────────────────────────
+const PHASE_DESCRIPTIONS = {
+  p1: 'Enfócate en aprender la técnica de cada ejercicio con cargas moderadas. Tu sistema nervioso se está adaptando a los movimientos. La última repetición debe ser desafiante pero siempre controlada.',
+  p2: 'Aumentamos el volumen para maximizar el estímulo muscular. Sube el peso cuando las últimas reps se sientan fáciles (RPE < 7). El progreso aquí es la clave del plan.',
+  p3: 'Fase de máxima intensidad. Trabaja cerca del fallo en cada serie (RPE 8-9). Las cargas son más altas y los descansos más largos — no los recortes.',
+  deload: 'Semana de descarga activa. Reduce el peso un 40-50% y enfócate en la técnica. El crecimiento real ocurre durante la recuperación: no te saltes esta semana.'
+}
+
 function buildPhaseStructure(totalWeeks) {
   if (totalWeeks === 4) {
     return [
-      { number: 1, name: 'Fase 1 — Adaptación',   weeks: 2, phaseKey: 'p1', isDeload: false },
-      { number: 2, name: 'Fase 2 — Desarrollo',    weeks: 2, phaseKey: 'p2', isDeload: false }
+      { number: 1, name: 'Fase 1 — Adaptación', weeks: 2, phaseKey: 'p1', isDeload: false, description: PHASE_DESCRIPTIONS.p1 },
+      { number: 2, name: 'Fase 2 — Desarrollo',  weeks: 2, phaseKey: 'p2', isDeload: false, description: PHASE_DESCRIPTIONS.p2 }
     ]
   }
   if (totalWeeks === 8) {
     return [
-      { number: 1, name: 'Fase 1 — Adaptación',   weeks: 4, phaseKey: 'p1', isDeload: false },
-      { number: 2, name: 'Fase 2 — Desarrollo',    weeks: 3, phaseKey: 'p2', isDeload: false },
-      { number: 3, name: 'Fase 3 — Deload',        weeks: 1, phaseKey: 'deload', isDeload: true }
+      { number: 1, name: 'Fase 1 — Adaptación', weeks: 4, phaseKey: 'p1', isDeload: false, description: PHASE_DESCRIPTIONS.p1 },
+      { number: 2, name: 'Fase 2 — Desarrollo',  weeks: 3, phaseKey: 'p2', isDeload: false, description: PHASE_DESCRIPTIONS.p2 },
+      { number: 3, name: 'Fase 3 — Deload',       weeks: 1, phaseKey: 'deload', isDeload: true, description: PHASE_DESCRIPTIONS.deload }
     ]
   }
   // 12 semanas
   return [
-    { number: 1, name: 'Fase 1 — Adaptación',   weeks: 4, phaseKey: 'p1', isDeload: false },
-    { number: 2, name: 'Fase 2 — Desarrollo',    weeks: 4, phaseKey: 'p2', isDeload: false },
-    { number: 3, name: 'Fase 3 — Intensificación', weeks: 3, phaseKey: 'p3', isDeload: false },
-    { number: 4, name: 'Fase 4 — Deload',        weeks: 1, phaseKey: 'deload', isDeload: true }
+    { number: 1, name: 'Fase 1 — Adaptación',      weeks: 4, phaseKey: 'p1', isDeload: false, description: PHASE_DESCRIPTIONS.p1 },
+    { number: 2, name: 'Fase 2 — Desarrollo',       weeks: 4, phaseKey: 'p2', isDeload: false, description: PHASE_DESCRIPTIONS.p2 },
+    { number: 3, name: 'Fase 3 — Intensificación',  weeks: 3, phaseKey: 'p3', isDeload: false, description: PHASE_DESCRIPTIONS.p3 },
+    { number: 4, name: 'Fase 4 — Deload',           weeks: 1, phaseKey: 'deload', isDeload: true, description: PHASE_DESCRIPTIONS.deload }
   ]
 }
 
@@ -411,7 +418,8 @@ export function generatePlan(answers) {
       totalSessions,
       methodId: methodId || null,
       modifiers,
-      createdAt: new Date().toISOString().slice(0, 10)
+      createdAt: new Date().toISOString().slice(0, 10),
+      rpeNote: 'Elige un peso con el que llegues cerca del fallo en la última serie (RPE 8-9). La última rep debe ser difícil pero técnicamente correcta. Si completas todas las reps con facilidad, sube el peso.'
     },
     phases: []
   }
@@ -484,11 +492,12 @@ export function generatePlan(answers) {
     }
 
     plan.phases.push({
-      number:   phase.number,
-      name:     phase.name,
-      weeks:    phase.weeks,
-      isDeload: phase.isDeload,
-      sessions: phaseSessions
+      number:      phase.number,
+      name:        phase.name,
+      weeks:       phase.weeks,
+      isDeload:    phase.isDeload,
+      description: phase.description || '',
+      sessions:    phaseSessions
     })
   }
 

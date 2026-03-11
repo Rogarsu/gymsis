@@ -659,9 +659,10 @@ a { color: var(--primary); text-decoration: none; }
   border-radius: var(--radius); padding: 12px; margin-top: 14px;
 }
 .modal-recommendation h4 { font-size: 12px; color: var(--text-muted); text-transform: uppercase; margin-bottom: 6px; }
-.rec-label { font-size: 15px; font-weight: 600; color: var(--primary); }
-.rec-note  { font-size: 12px; color: var(--text-muted); margin-top: 4px; font-style: italic; }
-.rec-box   { background: rgba(124,58,237,0.1); border-radius: 6px; padding: 10px 12px; margin-bottom: 14px; font-size: 14px; }
+.rec-label    { font-size: 15px; font-weight: 600; color: var(--primary); }
+.rec-note     { font-size: 12px; color: var(--text-muted); margin-top: 4px; font-style: italic; }
+.rec-box      { background: rgba(124,58,237,0.1); border-radius: 6px; padding: 10px 12px; margin-bottom: 14px; font-size: 14px; }
+.rec-rpe-note { font-size: 11px; color: var(--text-muted); margin-top: 6px; font-style: italic; display: flex; align-items: flex-start; gap: 4px; }
 
 .modal-edit-sets .edit-set-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
 .set-num-label { font-size: 13px; color: var(--text-muted); white-space: nowrap; width: 60px; flex-shrink: 0; }
