@@ -10,6 +10,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="/src/styles/main.css" />
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
 </head>
 <body>
 
@@ -24,7 +25,7 @@
 <section id="auth-section">
   <div class="auth-container">
     <div class="auth-logo">
-      <span class="auth-logo-icon">🏋️</span>
+      <span class="auth-logo-icon"><i data-lucide="zap"></i></span>
       <h1 class="auth-logo-title">SistemaVida</h1>
       <p class="auth-logo-sub">Entrenamiento Físico Personalizado</p>
     </div>
@@ -127,23 +128,23 @@
       <button class="btn-icon" id="btn-sidebar-toggle" onclick="toggleSidebar()" title="Menú">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
       </button>
-      <span class="nav-logo">🏋️ <span class="nav-logo-text">SistemaVida</span></span>
+      <span class="nav-logo"><i data-lucide="zap" class="nav-logo-icon"></i> <span class="nav-logo-text">SistemaVida</span></span>
     </div>
 
     <!-- Desktop nav -->
     <div class="top-nav-center desktop-only">
-      <button class="nav-btn active" id="nav-fisico" onclick="navGoFisico()">🏋️ Físico</button>
-      <button class="nav-btn" id="nav-nutricion" onclick="navGoNutricion()">🍃 Nutrición</button>
-      <button class="nav-btn" id="nav-progreso" onclick="navGoProgreso()">📈 Progreso</button>
-      <button class="nav-btn" id="nav-historial" onclick="navGoHistorial()">📋 Historial</button>
-      <button class="nav-btn" id="nav-reportes" onclick="navGoReportes()">📄 Reportes</button>
+      <button class="nav-btn active" id="nav-fisico" onclick="navGoFisico()"><i data-lucide="dumbbell"></i> Físico</button>
+      <button class="nav-btn" id="nav-nutricion" onclick="navGoNutricion()"><i data-lucide="salad"></i> Nutrición</button>
+      <button class="nav-btn" id="nav-progreso" onclick="navGoProgreso()"><i data-lucide="trending-up"></i> Progreso</button>
+      <button class="nav-btn" id="nav-historial" onclick="navGoHistorial()"><i data-lucide="history"></i> Historial</button>
+      <button class="nav-btn" id="nav-reportes" onclick="navGoReportes()"><i data-lucide="file-text"></i> Reportes</button>
     </div>
 
     <div class="top-nav-right">
       <span class="nav-user-email desktop-only" id="nav-user-email"></span>
       <!-- Mobile module selector -->
       <button class="btn-icon mobile-only" id="btn-module-toggle" onclick="toggleModuleMenu()">
-        <span id="current-module-label">🏋️ Físico</span>
+        <span id="current-module-label"><i data-lucide="dumbbell"></i> Físico</span>
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
       </button>
       <button class="btn-icon" onclick="toggleUserMenu()" title="Opciones">
@@ -153,23 +154,23 @@
 
     <!-- User dropdown -->
     <div class="user-menu hidden" id="user-menu">
-      <button class="user-menu-item" onclick="showNewCycle()">🔄 Nuevo Ciclo</button>
-      <button class="user-menu-item" onclick="resetProgress()">↺ Reiniciar Progreso</button>
+      <button class="user-menu-item" onclick="showNewCycle()"><i data-lucide="refresh-cw"></i> Nuevo Ciclo</button>
+      <button class="user-menu-item" onclick="resetProgress()"><i data-lucide="rotate-ccw"></i> Reiniciar Progreso</button>
       <div class="user-menu-divider"></div>
-      <button class="user-menu-item danger" onclick="authSignOut()">→ Cerrar sesión</button>
+      <button class="user-menu-item danger" onclick="authSignOut()"><i data-lucide="log-out"></i> Cerrar sesión</button>
     </div>
 
     <!-- Mobile module menu -->
     <div class="module-menu hidden" id="module-menu">
-      <button class="module-menu-item" onclick="navGoFisico();toggleModuleMenu()">🏋️ Físico</button>
-      <button class="module-menu-item" onclick="navGoNutricion();toggleModuleMenu()">🍃 Nutrición</button>
-      <button class="module-menu-item" onclick="navGoProgreso();toggleModuleMenu()">📈 Progreso</button>
-      <button class="module-menu-item" onclick="navGoHistorial();toggleModuleMenu()">📋 Historial</button>
-      <button class="module-menu-item" onclick="navGoReportes();toggleModuleMenu()">📄 Reportes</button>
+      <button class="module-menu-item" onclick="navGoFisico();toggleModuleMenu()"><i data-lucide="dumbbell"></i> Físico</button>
+      <button class="module-menu-item" onclick="navGoNutricion();toggleModuleMenu()"><i data-lucide="salad"></i> Nutrición</button>
+      <button class="module-menu-item" onclick="navGoProgreso();toggleModuleMenu()"><i data-lucide="trending-up"></i> Progreso</button>
+      <button class="module-menu-item" onclick="navGoHistorial();toggleModuleMenu()"><i data-lucide="history"></i> Historial</button>
+      <button class="module-menu-item" onclick="navGoReportes();toggleModuleMenu()"><i data-lucide="file-text"></i> Reportes</button>
       <div class="module-menu-divider"></div>
-      <button class="module-menu-item" onclick="showNewCycle();toggleModuleMenu()">🔄 Nuevo Ciclo</button>
-      <button class="module-menu-item" onclick="resetProgress();toggleModuleMenu()">↺ Reiniciar Progreso</button>
-      <button class="module-menu-item danger" onclick="authSignOut()">→ Cerrar sesión</button>
+      <button class="module-menu-item" onclick="showNewCycle();toggleModuleMenu()"><i data-lucide="refresh-cw"></i> Nuevo Ciclo</button>
+      <button class="module-menu-item" onclick="resetProgress();toggleModuleMenu()"><i data-lucide="rotate-ccw"></i> Reiniciar Progreso</button>
+      <button class="module-menu-item danger" onclick="authSignOut()"><i data-lucide="log-out"></i> Cerrar sesión</button>
     </div>
   </nav>
 
@@ -216,7 +217,7 @@
         <div id="session-view">
           <!-- Populated by session.js when a session is loaded -->
           <div class="empty-state" id="session-empty">
-            <div class="empty-icon">🏋️</div>
+            <div class="empty-icon"><i data-lucide="dumbbell"></i></div>
             <h2>Selecciona una sesión</h2>
             <p>Elige una sesión de la barra lateral para comenzar a entrenar</p>
             <button class="btn btn-primary" onclick="loadNextSession()">▶ Ir a la próxima sesión</button>

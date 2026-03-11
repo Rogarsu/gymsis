@@ -139,6 +139,9 @@ function exposeGlobals() {
 async function init() {
   exposeGlobals()
 
+  // Inicializar iconos Lucide
+  if (window.lucide) window.lucide.createIcons()
+
   // Cerrar menús al hacer click fuera
   document.addEventListener('click', (e) => {
     const userMenu   = document.getElementById('user-menu')
@@ -254,14 +257,16 @@ function navigateTo(module) {
 
   // Labels de módulos (desktop y mobile)
   const labels = {
-    fisico:    '🏋️ Físico',
-    nutricion: '🍃 Nutrición',
-    progreso:  '📈 Progreso',
-    historial: '📋 Historial',
-    reportes:  '📄 Reportes'
+    fisico:    { icon: 'dumbbell',    text: 'Físico' },
+    nutricion: { icon: 'salad',       text: 'Nutrición' },
+    progreso:  { icon: 'trending-up', text: 'Progreso' },
+    historial: { icon: 'history',     text: 'Historial' },
+    reportes:  { icon: 'file-text',   text: 'Reportes' }
   }
   const el = document.getElementById('current-module-label')
-  if (el) el.textContent = labels[module] || module
+  if (el && labels[module]) {
+    el.innerHTML = `<i data-lucide="${labels[module].icon}"></i> ${labels[module].text}`
+  }
 
   // Cerrar menús
   document.getElementById('user-menu')?.classList.add('hidden')
@@ -275,6 +280,9 @@ function navigateTo(module) {
     case 'reportes':  renderReports();       break
     case 'fisico':    updateStats();         break
   }
+
+  // Refrescar iconos Lucide tras renderizado
+  if (window.lucide) window.lucide.createIcons()
 }
 
 // ── Gestión del plan ──────────────────────────────────────────
