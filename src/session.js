@@ -439,7 +439,7 @@ export function openExModal(exId, sessionId) {
   const allLogs = getAllExLogs()
 
   const rec = getRecommendationForExercise(
-    { id: activeId, reps: planEx.reps, weightGuide: planEx.weightGuide, muscle: planEx.muscle, position: planEx.position },
+    { id: activeId, reps: planEx.reps, weightGuide: planEx.weightGuide, muscle: planEx.muscle, type: planEx.type, position: planEx.position },
     allLogs
   )
 
@@ -1012,7 +1012,7 @@ function renderGuidedExercise(session) {
   const activeEx = getById(activeId) || { name: planEx.name, muscle: planEx.muscle }
   const allLogs  = getAllExLogs()
   const rec = getRecommendationForExercise(
-    { id: activeId, reps: planEx.reps, weightGuide: planEx.weightGuide, muscle: planEx.muscle, position: planEx.position },
+    { id: activeId, reps: planEx.reps, weightGuide: planEx.weightGuide, muscle: planEx.muscle, type: planEx.type, position: planEx.position },
     allLogs
   )
 
