@@ -1118,3 +1118,9 @@ export function getAlternatives(exId, environment = 'gym', level = 'intermediate
 
 /** Grupos musculares únicos disponibles */
 export const MUSCLE_GROUPS = [...new Set(EXERCISES.map(e => e.muscle))]
+
+// ── Exercise image helper ─────────────────────────────────────
+export function getExerciseImage(exerciseId, sex = 'male') {
+  const gender = sex === 'female' ? 'female' : 'male'
+  return `/exercises/${exerciseId}/${gender}.jpg`
+}

@@ -7,6 +7,20 @@
 -- Cada usuario solo puede ver y modificar sus propios datos
 
 -- ── Training Plans ────────────────────────────────────────────
+-- plan_data JSONB contains the full plan object including meta fields:
+--   meta.sex             'male' | 'female' | 'other'
+--   meta.objective       string  — primary training objective
+--   meta.experience      string  — 'beginner' | 'intermediate' | 'advanced'
+--   meta.bodyComposition string  — 'lean' | 'normal' | 'overweight' | 'muscular'
+--   meta.sleep           string  — 'good' | 'moderate' | 'poor'
+--   meta.stress          string  — 'low' | 'moderate' | 'high'
+--   meta.job             string  — 'sedentary' | 'moderate' | 'active'
+--   meta.age             string  — age range e.g. '26-35'
+--   meta.limitations     array   — e.g. ['knees', 'back'] or ['none']
+--   meta.methodId        string  — assigned training method id
+--   meta.modifiers       array   — applied modifiers (age, recovery, job)
+--   meta.objectives      array   — legacy compatibility field
+--   meta.level           string  — legacy compatibility field (= experience)
 CREATE TABLE IF NOT EXISTS training_plans (
   id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id    UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,

@@ -1,32 +1,74 @@
 // ─────────────────────────────────────────────────────────────
-// onboarding.js — Wizard de 7 pasos para crear el plan
+// onboarding.js — Wizard de 12 pasos + resumen de perfil
 // ─────────────────────────────────────────────────────────────
 import { generatePlan } from './planner.js'
 import { getCycleWarning } from './planner.js'
 import { setPlanMeta, setPlanCache } from './storage.js'
 import { ic, refreshIcons } from './icons.js'
+import { assignMethod, applyModifiers, generateProfileSummary, TRAINING_METHODS } from './methods.js'
 
-const TOTAL_STEPS = 7
+const TOTAL_STEPS = 12
 let _step = 1
 let _answers = {}
 let _onComplete = null
+let _showingSummary = false
 
 // ── Opciones de cada paso ─────────────────────────────────────
+
+const SEX_OPTIONS = [
+  { id: 'male',   label: 'Hombre',              icon: 'user' },
+  { id: 'female', label: 'Mujer',               icon: 'user' },
+  { id: 'other',  label: 'Prefiero no responder', icon: 'user-x' }
+]
+
 const OBJECTIVES = [
-  { id: 'strength',    label: 'Ganar fuerza',       icon: 'dumbbell',      desc: 'Cargas altas, pocas repeticiones (3–8 reps)' },
-  { id: 'muscle',      label: 'Ganar músculo',       icon: 'biceps-flexed', desc: 'Volumen e hipertrofia (6–15 reps)' },
-  { id: 'weight_loss', label: 'Perder peso',         icon: 'flame',         desc: 'Circuitos metabólicos (12–20 reps)' },
-  { id: 'endurance',   label: 'Mejorar resistencia', icon: 'person-running',desc: 'Alta resistencia (15–25 reps)' },
-  { id: 'general',     label: 'Condición general',   icon: 'scale',         desc: 'Equilibrio completo (8–15 reps)' }
+  { id: 'strength',  label: 'Ganar fuerza',           icon: 'dumbbell',      desc: 'Cargas altas, pocas repeticiones (3–6 reps)' },
+  { id: 'muscle',    label: 'Ganar músculo',           icon: 'biceps-flexed', desc: 'Volumen e hipertrofia (6–12 reps)' },
+  { id: 'fat_loss',  label: 'Perder grasa',            icon: 'flame',         desc: 'Metabólico, descansos cortos (12–20 reps)' },
+  { id: 'recomp',    label: 'Recomposición corporal',  icon: 'scale',         desc: 'Perder grasa y ganar músculo a la vez' },
+  { id: 'endurance', label: 'Mejorar resistencia',     icon: 'person-running',desc: 'Alta resistencia (15–25 reps)' },
+  { id: 'general',   label: 'Condición general',       icon: 'heart-pulse',   desc: 'Salud y bienestar equilibrado' }
 ]
 
 const LEVELS = [
-  { id: 'beginner',     label: 'Principiante', icon: 'sprout',  desc: 'Menos de 1 año entrenando' },
-  { id: 'intermediate', label: 'Intermedio',   icon: 'zap',     desc: '1–3 años de experiencia' },
-  { id: 'advanced',     label: 'Avanzado',     icon: 'trophy',  desc: 'Más de 3 años, técnica sólida' }
+  { id: 'beginner',     label: 'Principiante', icon: 'sprout',  desc: 'Menos de 1 año entrenando con regularidad' },
+  { id: 'intermediate', label: 'Intermedio',   icon: 'zap',     desc: '1–3 años, conozco los ejercicios básicos' },
+  { id: 'advanced',     label: 'Avanzado',     icon: 'trophy',  desc: 'Más de 3 años, técnica sólida y consistente' }
 ]
 
-const DAYS = [1, 2, 3, 4, 5, 6]
+const BODY_COMPOSITION = [
+  { id: 'lean',        label: 'Delgado/a',          icon: 'person-standing', desc: 'Poca grasa corporal, podría ganar músculo' },
+  { id: 'normal',      label: 'Normal',              icon: 'user',            desc: 'Composición corporal promedio' },
+  { id: 'overweight',  label: 'Sobrepeso',           icon: 'trending-up',     desc: 'Me gustaría reducir grasa corporal' },
+  { id: 'muscular',    label: 'Musculoso/a',         icon: 'dumbbell',        desc: 'Masa muscular desarrollada' }
+]
+
+const SLEEP_OPTIONS = [
+  { id: 'good',     label: 'Bueno',    desc: '7–9 horas consistentes' },
+  { id: 'moderate', label: 'Regular',  desc: '5–7 horas, algunas noches mal' },
+  { id: 'poor',     label: 'Malo',     desc: 'Menos de 5h o muy irregular' }
+]
+
+const STRESS_OPTIONS = [
+  { id: 'low',      label: 'Bajo',      desc: 'Me siento tranquilo/a la mayoría del tiempo' },
+  { id: 'moderate', label: 'Moderado',  desc: 'Algunas semanas son demandantes' },
+  { id: 'high',     label: 'Alto',      desc: 'Estrés constante en trabajo o vida personal' }
+]
+
+const JOB_OPTIONS = [
+  { id: 'sedentary', label: 'Sedentario',  desc: 'Trabajo de escritorio, poco movimiento' },
+  { id: 'moderate',  label: 'Mixto',       desc: 'Mezcla de estar sentado y de pie' },
+  { id: 'active',    label: 'Activo',      desc: 'Trabajo físico, mucho movimiento o de pie todo el día' }
+]
+
+const AGE_RANGES = [
+  { id: '18-25', label: '18–25', desc: 'Máxima capacidad de recuperación' },
+  { id: '26-35', label: '26–35', desc: 'Óptimo para fuerza e hipertrofia' },
+  { id: '36-45', label: '36–45', desc: 'Ajuste en recuperación y volumen' },
+  { id: '46+',   label: '46+',   desc: 'Prioridad en descanso y técnica' }
+]
+
+const DAYS = [2, 3, 4, 5, 6]
 
 const DURATIONS = [
   { id: '45', label: '45 min', desc: '4 ejercicios por sesión' },
@@ -36,22 +78,30 @@ const DURATIONS = [
 ]
 
 const ENVIRONMENTS = [
-  { id: 'none', label: 'Sin equipamiento', icon: 'person-standing', desc: 'Solo peso corporal' },
+  { id: 'gym',  label: 'Gimnasio',         icon: 'dumbbell',        desc: 'Acceso completo a máquinas y barras' },
   { id: 'home', label: 'Casa con equipo',  icon: 'home',            desc: 'Mancuernas, bandas, banco' },
-  { id: 'gym',  label: 'Gimnasio',         icon: 'dumbbell',        desc: 'Acceso completo a máquinas y barras' }
+  { id: 'none', label: 'Sin equipamiento', icon: 'person-standing', desc: 'Solo peso corporal' }
+]
+
+const LIMITATIONS = [
+  { id: 'knees',    label: 'Rodillas',  icon: 'triangle-alert' },
+  { id: 'back',     label: 'Espalda',   icon: 'triangle-alert' },
+  { id: 'shoulders',label: 'Hombros',   icon: 'triangle-alert' },
+  { id: 'hips',     label: 'Cadera',    icon: 'triangle-alert' },
+  { id: 'none',     label: 'Ninguna',   icon: 'check-circle' }
 ]
 
 const SPLITS = [
-  { id: 'fullbody',     label: 'Full Body',            icon: 'refresh-cw',    desc: 'Todo el cuerpo en cada sesión', types: 3 },
-  { id: 'upper',        label: 'Solo Tren Superior',   icon: 'arrow-up',      desc: 'Pecho, espalda, hombros, brazos', types: 2 },
-  { id: 'lower',        label: 'Solo Tren Inferior',   icon: 'arrow-down',    desc: 'Piernas, glúteo, core', types: 2 },
-  { id: 'upper_lower',  label: 'Superior + Inferior',  icon: 'arrows-up-down',desc: 'Alternancia tren superior/inferior', types: 4 },
-  { id: 'ppl',          label: 'Push / Pull / Legs',   icon: 'settings-2',    desc: 'Empuje, jalón y piernas', types: 6 }
+  { id: 'fullbody',    label: 'Full Body',           icon: 'refresh-cw',    desc: 'Todo el cuerpo en cada sesión', types: 3 },
+  { id: 'upper_lower', label: 'Superior + Inferior', icon: 'arrows-up-down',desc: 'Alternancia tren superior/inferior', types: 4 },
+  { id: 'ppl',         label: 'Push / Pull / Legs',  icon: 'settings-2',    desc: 'Empuje, jalón y piernas', types: 6 },
+  { id: 'upper',       label: 'Solo Tren Superior',  icon: 'arrow-up',      desc: 'Pecho, espalda, hombros, brazos', types: 2 },
+  { id: 'lower',       label: 'Solo Tren Inferior',  icon: 'arrow-down',    desc: 'Piernas, glúteo, core', types: 2 }
 ]
 
 const WEEKS = [
-  { id: 4,  label: '4 semanas', desc: '2 fases de entrenamiento' },
-  { id: 8,  label: '8 semanas', desc: '3 fases + semana de deload' },
+  { id: 4,  label: '4 semanas',  desc: '2 fases de entrenamiento' },
+  { id: 8,  label: '8 semanas',  desc: '3 fases + semana de deload' },
   { id: 12, label: '12 semanas', desc: '4 fases con deload final' }
 ]
 
@@ -60,6 +110,7 @@ export function initOnboarding(onComplete) {
   _onComplete = onComplete
   _step = 1
   _answers = {}
+  _showingSummary = false
 }
 
 export function showOnboarding() {
@@ -71,56 +122,116 @@ export function showOnboarding() {
 
 // ── Renderizado ───────────────────────────────────────────────
 function renderStep() {
+  _showingSummary = false
   updateProgress()
   const card = document.getElementById('ob-card')
   if (!card) return
 
   switch (_step) {
-    case 1: card.innerHTML = renderStep1(); break
-    case 2: card.innerHTML = renderStep2(); break
-    case 3: card.innerHTML = renderStep3(); break
-    case 4: card.innerHTML = renderStep4(); break
-    case 5: card.innerHTML = renderStep5(); break
-    case 6: card.innerHTML = renderStep6(); break
-    case 7: card.innerHTML = renderStep7(); break
+    case 1:  card.innerHTML = renderStep1();  break
+    case 2:  card.innerHTML = renderStep2();  break
+    case 3:  card.innerHTML = renderStep3();  break
+    case 4:  card.innerHTML = renderStep4();  break
+    case 5:  card.innerHTML = renderStep5();  break
+    case 6:  card.innerHTML = renderStep6();  break
+    case 7:  card.innerHTML = renderStep7();  break
+    case 8:  card.innerHTML = renderStep8();  break
+    case 9:  card.innerHTML = renderStep9();  break
+    case 10: card.innerHTML = renderStep10(); break
+    case 11: card.innerHTML = renderStep11(); break
+    case 12: card.innerHTML = renderStep12(); break
   }
 
-  // Restaurar selecciones previas
   restoreSelections()
   updateNavButtons()
   refreshIcons()
 
-  // Actualizar aviso de ciclos en paso 6
-  if (_step === 6) updateCycleWarning()
-  // Actualizar preview en paso 7
-  if (_step === 7) updateSessionPreview()
+  if (_step === 11) updateCycleWarning()
+  if (_step === 12) updateSessionPreview()
+}
+
+function renderSummaryScreen() {
+  _showingSummary = true
+  const card = document.getElementById('ob-card')
+  if (!card) return
+
+  // Compute method
+  const { methodId, modifiers } = assignMethod(_answers)
+  const effectiveMethod = applyModifiers(methodId, modifiers)
+  const summaryHTML = generateProfileSummary(_answers, methodId, modifiers, effectiveMethod)
+
+  card.innerHTML = `
+    <h2 class="ob-title">Tu perfil de entrenamiento</h2>
+    <p class="ob-subtitle">Basado en tus respuestas, este es tu método óptimo.</p>
+    ${summaryHTML}
+    <div class="ob-summary-cta">
+      <button class="btn btn-success btn-full" onclick="obGeneratePlan()">
+        ${ic('check')} Generar mi plan personalizado
+      </button>
+      <button class="btn btn-ghost ob-adjust-link" onclick="obBackFromSummary()">
+        ${ic('arrow-left')} Ajustar respuestas
+      </button>
+    </div>
+  `
+
+  // Hide normal nav, summary has its own CTA
+  const nav = document.getElementById('ob-nav')
+  if (nav) nav.classList.add('hidden')
+
+  updateProgress()
+  refreshIcons()
 }
 
 function updateProgress() {
   const bar = document.getElementById('ob-progress-bar')
   const label = document.getElementById('ob-step-label')
-  if (bar) bar.style.width = `${((_step - 1) / (TOTAL_STEPS - 1)) * 100}%`
-  if (label) label.textContent = `Paso ${_step} de ${TOTAL_STEPS}`
+  if (_showingSummary) {
+    if (bar) bar.style.width = '100%'
+    if (label) label.textContent = 'Resumen de perfil'
+  } else {
+    if (bar) bar.style.width = `${((_step - 1) / (TOTAL_STEPS - 1)) * 100}%`
+    if (label) label.textContent = `Paso ${_step} de ${TOTAL_STEPS}`
+  }
 }
 
 function updateNavButtons() {
+  const nav = document.getElementById('ob-nav')
+  if (nav) nav.classList.remove('hidden')
+
   const btnBack = document.getElementById('ob-btn-back')
   const btnNext = document.getElementById('ob-btn-next')
   if (btnBack) btnBack.classList.toggle('hidden', _step === 1)
   if (btnNext) {
-    btnNext.innerHTML = _step === TOTAL_STEPS ? `${ic('check')} Generar mi plan` : `Siguiente ${ic('arrow-right')}`
-    btnNext.className = _step === TOTAL_STEPS ? 'btn btn-success' : 'btn btn-primary'
+    btnNext.innerHTML = _step === TOTAL_STEPS
+      ? `${ic('user')} Ver mi perfil ${ic('arrow-right')}`
+      : `Siguiente ${ic('arrow-right')}`
+    btnNext.className = _step === TOTAL_STEPS ? 'btn btn-primary' : 'btn btn-primary'
   }
 }
 
 // ── Pasos individuales ────────────────────────────────────────
 function renderStep1() {
   return `
-    <h2 class="ob-title">¿Cuál es tu objetivo?</h2>
-    <p class="ob-subtitle">Puedes elegir uno o varios. El plan combinará estrategias.</p>
+    <h2 class="ob-title">¿Con qué sexo te identificas?</h2>
+    <p class="ob-subtitle">Esto ayuda a personalizar tus recomendaciones de peso y ejercicios.</p>
+    <div class="ob-grid ob-grid-3">
+      ${SEX_OPTIONS.map(o => `
+        <button class="ob-option ob-single" data-group="sex" data-value="${o.id}" onclick="obSelectSingle(this)">
+          <span class="ob-option-icon">${ic(o.icon)}</span>
+          <span class="ob-option-label">${o.label}</span>
+        </button>
+      `).join('')}
+    </div>
+  `
+}
+
+function renderStep2() {
+  return `
+    <h2 class="ob-title">¿Cuál es tu objetivo principal?</h2>
+    <p class="ob-subtitle">Elige el que mejor describe lo que quieres lograr.</p>
     <div class="ob-grid ob-grid-2">
       ${OBJECTIVES.map(o => `
-        <button class="ob-option ob-multi" data-group="objectives" data-value="${o.id}" onclick="obToggleMulti(this)">
+        <button class="ob-option ob-single" data-group="objective" data-value="${o.id}" onclick="obSelectSingle(this)">
           <span class="ob-option-icon">${ic(o.icon)}</span>
           <span class="ob-option-label">${o.label}</span>
           <span class="ob-option-desc">${o.desc}</span>
@@ -130,13 +241,13 @@ function renderStep1() {
   `
 }
 
-function renderStep2() {
+function renderStep3() {
   return `
     <h2 class="ob-title">¿Cuál es tu nivel de experiencia?</h2>
-    <p class="ob-subtitle">Sé honesto — el plan se adapta a tu nivel actual.</p>
+    <p class="ob-subtitle">Sé honesto/a — el método de entrenamiento depende de esto.</p>
     <div class="ob-grid ob-grid-3">
       ${LEVELS.map(l => `
-        <button class="ob-option ob-single" data-group="level" data-value="${l.id}" onclick="obSelectSingle(this)">
+        <button class="ob-option ob-single" data-group="experience" data-value="${l.id}" onclick="obSelectSingle(this)">
           <span class="ob-option-icon">${ic(l.icon)}</span>
           <span class="ob-option-label">${l.label}</span>
           <span class="ob-option-desc">${l.desc}</span>
@@ -146,11 +257,85 @@ function renderStep2() {
   `
 }
 
-function renderStep3() {
+function renderStep4() {
+  return `
+    <h2 class="ob-title">¿Cómo describirías tu composición corporal actual?</h2>
+    <p class="ob-subtitle">Esta información ayuda a ajustar el método y la nutrición.</p>
+    <div class="ob-grid ob-grid-2">
+      ${BODY_COMPOSITION.map(b => `
+        <button class="ob-option ob-single" data-group="bodyComposition" data-value="${b.id}" onclick="obSelectSingle(this)">
+          <span class="ob-option-icon">${ic(b.icon)}</span>
+          <span class="ob-option-label">${b.label}</span>
+          <span class="ob-option-desc">${b.desc}</span>
+        </button>
+      `).join('')}
+    </div>
+  `
+}
+
+function renderStep5() {
+  return `
+    <h2 class="ob-title">Cuéntame sobre tu recuperación</h2>
+    <p class="ob-subtitle">Estos factores determinan el volumen y frecuencia óptimos para ti.</p>
+
+    <div class="ob-recovery-section">
+      <div class="ob-recovery-label">${ic('moon')} ¿Cómo es tu calidad de sueño?</div>
+      <div class="ob-grid ob-grid-3">
+        ${SLEEP_OPTIONS.map(s => `
+          <button class="ob-option ob-single ob-small" data-group="sleep" data-value="${s.id}" onclick="obSelectSingle(this)">
+            <span class="ob-option-label">${s.label}</span>
+            <span class="ob-option-desc">${s.desc}</span>
+          </button>
+        `).join('')}
+      </div>
+    </div>
+
+    <div class="ob-recovery-section">
+      <div class="ob-recovery-label">${ic('brain')} ¿Cuál es tu nivel de estrés habitual?</div>
+      <div class="ob-grid ob-grid-3">
+        ${STRESS_OPTIONS.map(s => `
+          <button class="ob-option ob-single ob-small" data-group="stress" data-value="${s.id}" onclick="obSelectSingle(this)">
+            <span class="ob-option-label">${s.label}</span>
+            <span class="ob-option-desc">${s.desc}</span>
+          </button>
+        `).join('')}
+      </div>
+    </div>
+
+    <div class="ob-recovery-section">
+      <div class="ob-recovery-label">${ic('briefcase')} ¿Qué tipo de trabajo tienes?</div>
+      <div class="ob-grid ob-grid-3">
+        ${JOB_OPTIONS.map(j => `
+          <button class="ob-option ob-single ob-small" data-group="job" data-value="${j.id}" onclick="obSelectSingle(this)">
+            <span class="ob-option-label">${j.label}</span>
+            <span class="ob-option-desc">${j.desc}</span>
+          </button>
+        `).join('')}
+      </div>
+    </div>
+  `
+}
+
+function renderStep6() {
+  return `
+    <h2 class="ob-title">¿Cuántos años tienes?</h2>
+    <p class="ob-subtitle">La edad influye en el volumen, descanso y progresión recomendados.</p>
+    <div class="ob-grid ob-grid-2">
+      ${AGE_RANGES.map(a => `
+        <button class="ob-option ob-single" data-group="age" data-value="${a.id}" onclick="obSelectSingle(this)">
+          <span class="ob-option-label">${a.label}</span>
+          <span class="ob-option-desc">${a.desc}</span>
+        </button>
+      `).join('')}
+    </div>
+  `
+}
+
+function renderStep7() {
   return `
     <h2 class="ob-title">¿Cuántos días por semana puedes entrenar?</h2>
     <p class="ob-subtitle">El número de días determina el total de sesiones del plan.</p>
-    <div class="ob-grid ob-grid-6">
+    <div class="ob-grid ob-grid-5">
       ${DAYS.map(d => `
         <button class="ob-option ob-single ob-day" data-group="daysPerWeek" data-value="${d}" onclick="obSelectSingle(this)">
           <span class="ob-option-label">${d}</span>
@@ -161,7 +346,7 @@ function renderStep3() {
   `
 }
 
-function renderStep4() {
+function renderStep8() {
   return `
     <h2 class="ob-title">¿Cuánto tiempo tienes por sesión?</h2>
     <p class="ob-subtitle">El tiempo disponible define la cantidad de ejercicios.</p>
@@ -176,7 +361,7 @@ function renderStep4() {
   `
 }
 
-function renderStep5() {
+function renderStep9() {
   return `
     <h2 class="ob-title">¿Dónde entrenas?</h2>
     <p class="ob-subtitle">Selecciona tu entorno para adaptar el equipamiento disponible.</p>
@@ -192,7 +377,29 @@ function renderStep5() {
   `
 }
 
-function renderStep6() {
+function renderStep10() {
+  return `
+    <h2 class="ob-title">¿Tienes alguna limitación física?</h2>
+    <p class="ob-subtitle">Puedes seleccionar varias. Adaptaremos los ejercicios.</p>
+    <div class="ob-grid ob-grid-2">
+      ${LIMITATIONS.map(l => `
+        <button class="ob-option ob-multi" data-group="limitations" data-value="${l.id}" onclick="obToggleMulti(this)">
+          <span class="ob-option-icon">${ic(l.icon)}</span>
+          <span class="ob-option-label">${l.label}</span>
+        </button>
+      `).join('')}
+    </div>
+  `
+}
+
+function renderStep11() {
+  // Auto-recommend split based on days and method
+  const days = _answers.daysPerWeek || 3
+  let recommended = 'fullbody'
+  if (days >= 5) recommended = 'ppl'
+  else if (days === 4) recommended = 'upper_lower'
+  else if (days <= 3) recommended = 'fullbody'
+
   return `
     <h2 class="ob-title">¿Qué división de entrenamiento prefieres?</h2>
     <p class="ob-subtitle">Determina cómo se organizan los grupos musculares por sesión.</p>
@@ -201,7 +408,7 @@ function renderStep6() {
         <button class="ob-option ob-single ob-split" data-group="split" data-value="${s.id}" onclick="obSelectSingle(this)">
           <span class="ob-option-icon">${ic(s.icon)}</span>
           <div class="ob-option-text">
-            <span class="ob-option-label">${s.label}</span>
+            <span class="ob-option-label">${s.label}${s.id === recommended ? ' <span class="ob-recommended-badge">Recomendado</span>' : ''}</span>
             <span class="ob-option-desc">${s.desc} · ${s.types} tipos de sesión</span>
           </div>
         </button>
@@ -211,7 +418,7 @@ function renderStep6() {
   `
 }
 
-function renderStep7() {
+function renderStep12() {
   return `
     <h2 class="ob-title">¿Cuánto tiempo durará tu plan?</h2>
     <p class="ob-subtitle">Más semanas = más progresión y adaptación.</p>
@@ -231,11 +438,24 @@ function renderStep7() {
 export function obToggleMulti(btn) {
   const group = btn.dataset.group
   const value = btn.dataset.value
-  btn.classList.toggle('selected')
 
+  // "Ninguna" deselects everything else; everything else deselects "Ninguna"
+  if (value === 'none') {
+    document.querySelectorAll(`.ob-multi[data-group="${group}"]`).forEach(b => b.classList.remove('selected'))
+    btn.classList.add('selected')
+    _answers[group] = ['none']
+    return
+  }
+
+  // Deselect "none" if selecting something else
+  const noneBtn = document.querySelector(`.ob-multi[data-group="${group}"][data-value="none"]`)
+  if (noneBtn) noneBtn.classList.remove('selected')
+
+  btn.classList.toggle('selected')
   const selected = [...document.querySelectorAll(`.ob-multi[data-group="${group}"].selected`)]
     .map(b => b.dataset.value)
-  _answers[group] = selected
+    .filter(v => v !== 'none')
+  _answers[group] = selected.length > 0 ? selected : []
 }
 
 export function obSelectSingle(btn) {
@@ -249,14 +469,14 @@ export function obSelectSingle(btn) {
 }
 
 function restoreSelections() {
-  // Restaurar multi-selección (objetivos)
-  const objectives = _answers.objectives || []
-  document.querySelectorAll('.ob-multi[data-group="objectives"]').forEach(btn => {
-    btn.classList.toggle('selected', objectives.includes(btn.dataset.value))
+  // Multi-selección (limitaciones)
+  const limitations = _answers.limitations || []
+  document.querySelectorAll('.ob-multi[data-group="limitations"]').forEach(btn => {
+    btn.classList.toggle('selected', limitations.includes(btn.dataset.value))
   })
 
-  // Restaurar selecciones únicas
-  const singleGroups = ['level','daysPerWeek','duration','environment','split','planWeeks']
+  // Selecciones únicas
+  const singleGroups = ['sex','objective','experience','bodyComposition','sleep','stress','job','age','daysPerWeek','duration','environment','split','planWeeks']
   singleGroups.forEach(group => {
     if (_answers[group] !== undefined) {
       const val = String(_answers[group])
@@ -312,7 +532,8 @@ function updateSessionPreview() {
 export function obNext() {
   if (!validateStep()) return
   if (_step === TOTAL_STEPS) {
-    finishOnboarding()
+    // Go to profile summary screen
+    renderSummaryScreen()
     return
   }
   _step++
@@ -325,15 +546,34 @@ export function obBack() {
   renderStep()
 }
 
+export function obBackFromSummary() {
+  _showingSummary = false
+  renderStep()
+}
+
+export function obGeneratePlan() {
+  finishOnboarding()
+}
+
 function validateStep() {
   const errors = {
-    1: () => !_answers.objectives?.length && '¡Elige al menos un objetivo!',
-    2: () => !_answers.level && 'Selecciona tu nivel de experiencia',
-    3: () => !_answers.daysPerWeek && 'Elige cuántos días entrenas',
-    4: () => !_answers.duration && 'Elige la duración de tus sesiones',
-    5: () => !_answers.environment && 'Selecciona tu entorno de entrenamiento',
-    6: () => !_answers.split && 'Elige una división de entrenamiento',
-    7: () => !_answers.planWeeks && 'Elige la duración del plan'
+    1:  () => !_answers.sex                  && '¡Selecciona una opción!',
+    2:  () => !_answers.objective            && '¡Elige tu objetivo principal!',
+    3:  () => !_answers.experience           && 'Selecciona tu nivel de experiencia',
+    4:  () => !_answers.bodyComposition      && 'Selecciona tu composición corporal',
+    5:  () => {
+      if (!_answers.sleep)  return 'Selecciona tu calidad de sueño'
+      if (!_answers.stress) return 'Selecciona tu nivel de estrés'
+      if (!_answers.job)    return 'Selecciona tu tipo de trabajo'
+      return false
+    },
+    6:  () => !_answers.age                  && 'Selecciona tu rango de edad',
+    7:  () => !_answers.daysPerWeek          && 'Elige cuántos días entrenas',
+    8:  () => !_answers.duration             && 'Elige la duración de tus sesiones',
+    9:  () => !_answers.environment          && 'Selecciona tu entorno de entrenamiento',
+    10: () => false, // limitations optional
+    11: () => !_answers.split               && 'Elige una división de entrenamiento',
+    12: () => !_answers.planWeeks           && 'Elige la duración del plan'
   }
   const errFn = errors[_step]
   if (errFn) {
@@ -355,34 +595,54 @@ function showObError(msg) {
 
 // ── Finalizar onboarding ──────────────────────────────────────
 async function finishOnboarding() {
-  const btnNext = document.getElementById('ob-btn-next')
-  if (btnNext) { btnNext.disabled = true; btnNext.innerHTML = `${ic('settings')} Generando plan...` }
+  const generateBtn = document.querySelector('.ob-summary-cta .btn-success')
+  if (generateBtn) { generateBtn.disabled = true; generateBtn.innerHTML = `${ic('settings')} Generando plan...` }
 
   try {
-    // Normalizar respuestas
+    // Compute method
+    const { methodId, modifiers } = assignMethod(_answers)
+
+    // Normalize answers with all new fields
     const answers = {
-      objectives:  _answers.objectives  || ['general'],
-      level:       _answers.level       || 'intermediate',
-      daysPerWeek: _answers.daysPerWeek || 3,
-      duration:    _answers.duration    || '60',
-      environment: _answers.environment || 'gym',
-      split:       _answers.split       || 'fullbody',
-      planWeeks:   _answers.planWeeks   || 8
+      // New smart fields
+      sex:             _answers.sex            || 'other',
+      objective:       _answers.objective      || 'general',
+      experience:      _answers.experience     || 'intermediate',
+      bodyComposition: _answers.bodyComposition|| 'normal',
+      sleep:           _answers.sleep          || 'moderate',
+      stress:          _answers.stress         || 'moderate',
+      job:             _answers.job            || 'sedentary',
+      age:             _answers.age            || '26-35',
+      limitations:     _answers.limitations    || [],
+      methodId,
+      modifiers,
+      // Plan structure fields
+      daysPerWeek:     _answers.daysPerWeek    || 3,
+      duration:        _answers.duration       || '60',
+      environment:     _answers.environment    || 'gym',
+      split:           _answers.split          || 'fullbody',
+      planWeeks:       _answers.planWeeks      || 8,
+      // Legacy compatibility
+      objectives:      [_answers.objective     || 'general'],
+      level:           _answers.experience     || 'intermediate'
     }
 
-    // Generar plan
+    // Generate plan
     const plan = generatePlan(answers)
 
-    // Guardar en localStorage
+    // Save to localStorage
     setPlanMeta(answers)
     setPlanCache(plan)
 
-    // Llamar callback
+    // Callback
     _onComplete?.(plan, answers)
 
   } catch (e) {
     console.error('Error generando plan:', e)
-    if (btnNext) { btnNext.disabled = false; btnNext.innerHTML = `${ic('check')} Generar mi plan` }
+    if (generateBtn) {
+      generateBtn.disabled = false
+      generateBtn.innerHTML = `${ic('check')} Generar mi plan personalizado`
+    }
     showObError('Error al generar el plan. Intenta de nuevo.')
   }
 }

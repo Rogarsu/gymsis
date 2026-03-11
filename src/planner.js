@@ -2,6 +2,7 @@
 // planner.js — Generador de plan de entrenamiento personalizado
 // ─────────────────────────────────────────────────────────────
 import { getByMuscle } from './exercises.js'
+import { TRAINING_METHODS, applyModifiers } from './methods.js'
 
 // ── Configuraciones base ──────────────────────────────────────
 
@@ -243,16 +244,45 @@ function pickExercises(muscle, count, environment, level, usedIds, phaseKey, obj
 }
 
 // ── Construir un ejercicio de sesión ──────────────────────────
-function buildSessionExercise(ex, phaseKey, objectives, environment, level, position) {
+function buildSessionExercise(ex, phaseKey, objectives, environment, level, position, methodConfig, templateIndex) {
   const mainObj = resolveObjective(objectives)
-  const ranges = REP_RANGES[mainObj] || REP_RANGES.general
-  const rests  = REST_TIMES[mainObj]  || REST_TIMES.general
-  const sets   = SETS_BY_PHASE[phaseKey] || SETS_BY_PHASE.p1
 
-  const reps = ranges[phaseKey] || ranges.p1
-  const rest = ex.type === 'compound' ? rests.compound : rests.isolation
-  const numSets = (phaseKey === 'deload') ? sets.compound :
-    (ex.type === 'compound' ? sets.compound : sets.isolation)
+  // Use method config if available, otherwise fall back to legacy tables
+  let reps, rest, numSets
+  if (methodConfig) {
+    const repRanges = methodConfig.repRanges
+
+    // DUP: vary rep range per template index (0=hypertrophy, 1=strength, 2=endurance)
+    if (methodConfig.id === 'dup' && phaseKey !== 'deload') {
+      const dupCycle = (templateIndex || 0) % 3
+      if (dupCycle === 0) reps = '8-12'
+      else if (dupCycle === 1) reps = '4-6'
+      else reps = '14-18'
+    } else {
+      reps = repRanges[phaseKey] || repRanges.p1
+    }
+
+    // Rest times from method (in seconds, stored as label string for display)
+    const restSec = ex.type === 'compound'
+      ? methodConfig.restSeconds.compound
+      : methodConfig.restSeconds.isolation
+    rest = ex.type === 'compound'
+      ? methodConfig.restLabel.compound
+      : methodConfig.restLabel.isolation
+
+    // Sets from method
+    const baseSets = ex.type === 'compound' ? methodConfig.sets.compound : methodConfig.sets.isolation
+    numSets = phaseKey === 'deload' ? Math.max(2, Math.round(baseSets * 0.6)) : baseSets
+  } else {
+    // Legacy fallback
+    const ranges = REP_RANGES[mainObj] || REP_RANGES.general
+    const rests  = REST_TIMES[mainObj]  || REST_TIMES.general
+    const sets   = SETS_BY_PHASE[phaseKey] || SETS_BY_PHASE.p1
+    reps = ranges[phaseKey] || ranges.p1
+    rest = ex.type === 'compound' ? rests.compound : rests.isolation
+    numSets = (phaseKey === 'deload') ? sets.compound :
+      (ex.type === 'compound' ? sets.compound : sets.isolation)
+  }
 
   const weightGuideObj = WEIGHT_GUIDE[environment] || WEIGHT_GUIDE.gym
   const muscleGuide = weightGuideObj[ex.muscle] || weightGuideObj.Pecho
@@ -283,8 +313,16 @@ export function generatePlan(answers) {
     duration     = '60',
     environment  = 'gym',
     split        = 'fullbody',
-    planWeeks    = 8
+    planWeeks    = 8,
+    methodId,
+    modifiers    = []
   } = answers
+
+  // Resolve method config (new smart onboarding) or fall back to legacy
+  let methodConfig = null
+  if (methodId && TRAINING_METHODS[methodId]) {
+    methodConfig = applyModifiers(methodId, modifiers)
+  }
 
   const exPerSession  = EXERCISES_PER_DURATION[duration] || 5
   const templates     = SPLIT_TEMPLATES[split] || SPLIT_TEMPLATES.fullbody
@@ -301,6 +339,8 @@ export function generatePlan(answers) {
       split,
       planWeeks,
       totalSessions,
+      methodId: methodId || null,
+      modifiers,
       createdAt: new Date().toISOString().slice(0, 10)
     },
     phases: []
@@ -326,6 +366,7 @@ export function generatePlan(answers) {
 
       // Ciclar templates
       const template = templates[templateIndex % templates.length]
+      const currentTemplateIndex = templateIndex
       templateIndex++
 
       // Calcular cuántos ejercicios por bloque
@@ -348,7 +389,7 @@ export function generatePlan(answers) {
 
         for (const ex of exercises) {
           exercisesForSession.push(
-            buildSessionExercise(ex, phase.phaseKey, objectives, environment, level, position)
+            buildSessionExercise(ex, phase.phaseKey, objectives, environment, level, position, methodConfig, currentTemplateIndex)
           )
           position++
         }

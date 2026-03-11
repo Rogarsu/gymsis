@@ -238,6 +238,66 @@ a { color: var(--primary); text-decoration: none; }
 .ob-preview-formula { color: var(--text-muted); font-size: 13px; }
 .ob-preview-result  { font-size: 18px; font-weight: 700; color: var(--accent); }
 
+/* Recovery step groups */
+.ob-recovery-section { margin-bottom: 16px; }
+.ob-recovery-label { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; color: var(--text-muted); margin-bottom: 8px; }
+.ob-recovery-label svg { width: 15px; height: 15px; }
+.ob-option.ob-small { padding: 10px 8px; }
+.ob-option.ob-small .ob-option-label { font-size: 12px; }
+.ob-option.ob-small .ob-option-desc  { font-size: 10px; }
+
+/* 5-column grid */
+.ob-grid-5 { grid-template-columns: repeat(3, 1fr); }
+@media (min-width: 400px) { .ob-grid-5 { grid-template-columns: repeat(5, 1fr); } }
+
+/* Recommended badge */
+.ob-recommended-badge {
+  display: inline-block; font-size: 9px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.06em; padding: 2px 6px; border-radius: 4px;
+  background: rgba(124,58,237,0.2); color: var(--primary); margin-left: 6px; vertical-align: middle;
+}
+
+/* Summary CTA */
+.ob-summary-cta { display: flex; flex-direction: column; gap: 10px; margin-top: 20px; }
+.ob-adjust-link { font-size: 13px; color: var(--text-muted); }
+
+/* Profile Summary */
+.profile-summary { display: flex; flex-direction: column; gap: 16px; }
+.profile-method-header { display: flex; align-items: flex-start; gap: 14px; padding: 16px; border-radius: var(--radius); background: var(--surface-2); border: 1px solid var(--border); }
+.profile-method-icon svg { width: 32px; height: 32px; }
+.profile-method-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); }
+.profile-method-name { font-family: var(--font-display); font-size: 22px; font-weight: 700; margin: 2px 0 4px; }
+.profile-method-tagline { font-size: 13px; color: var(--text-muted); }
+/* Color per method */
+.profile-linear_progression .profile-method-icon, .profile-linear_progression .profile-method-name { color: var(--accent); }
+.profile-pure_strength .profile-method-icon, .profile-pure_strength .profile-method-name { color: var(--danger); }
+.profile-hypertrophy .profile-method-icon, .profile-hypertrophy .profile-method-name { color: var(--primary); }
+.profile-dup .profile-method-icon, .profile-dup .profile-method-name { color: var(--phase-4); }
+.profile-fat_loss .profile-method-icon, .profile-fat_loss .profile-method-name { color: var(--warning); }
+.profile-recomp .profile-method-icon, .profile-recomp .profile-method-name { color: var(--success); }
+
+.profile-why, .profile-numbers, .profile-nutrition, .profile-hydration, .profile-recovery {
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px;
+}
+.profile-section-title { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); margin-bottom: 10px; }
+.profile-section-title svg { width: 14px; height: 14px; }
+.profile-why p { font-size: 14px; color: var(--text-muted); line-height: 1.6; }
+.profile-numbers-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.profile-number-item { display: flex; flex-direction: column; gap: 3px; }
+.profile-number-value { font-family: var(--font-display); font-size: 15px; font-weight: 600; color: var(--text); }
+.profile-number-label { font-size: 11px; color: var(--text-muted); }
+.profile-list { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+.profile-list li { display: flex; align-items: flex-start; gap: 8px; font-size: 13px; color: var(--text-muted); line-height: 1.4; }
+.profile-list li svg { width: 14px; height: 14px; flex-shrink: 0; margin-top: 2px; color: var(--primary); }
+.profile-modifiers { display: flex; flex-direction: column; gap: 6px; padding: 12px 14px; background: rgba(251,191,36,0.08); border: 1px solid rgba(251,191,36,0.2); border-radius: var(--radius); }
+.profile-mod-title { font-size: 11px; font-weight: 600; text-transform: uppercase; color: var(--warning); letter-spacing: 0.06em; }
+.profile-mod-item { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text-muted); }
+.profile-mod-item svg { width: 13px; height: 13px; color: var(--warning); }
+
+/* Exercise image in modal */
+.ex-modal-image-wrap { width: 100%; max-height: 180px; overflow: hidden; border-radius: var(--radius); margin-bottom: 12px; background: var(--surface-2); }
+.ex-modal-image { width: 100%; height: 180px; object-fit: cover; display: block; }
+
 /* ══════════════════════════════════════════════════
    TOP NAV
 ══════════════════════════════════════════════════ */

@@ -2,7 +2,7 @@
 // main.js — Punto de entrada de la aplicación SistemaVida
 // ─────────────────────────────────────────────────────────────
 import { initAuth, showAuthSection, authShowTab, authSignIn, authRegister, authSignInGoogle, authSignOut, authContinueAsGuest, isGuestMode } from './auth.js'
-import { initOnboarding, showOnboarding, obNext, obBack, obToggleMulti, obSelectSingle } from './onboarding.js'
+import { initOnboarding, showOnboarding, obNext, obBack, obToggleMulti, obSelectSingle, obBackFromSummary, obGeneratePlan } from './onboarding.js'
 import { initSession, renderSidebar, loadSession, loadNextSession, toggleSidebar, closeSidebar,
          toggleUserMenu, toggleModuleMenu, switchTab, startSessionTimer,
          openExModal, closeExModal, completeCurrentSerie, inlineTimerAdjust, skipInlineTimer,
@@ -52,6 +52,8 @@ function exposeGlobals() {
   window.obBack              = obBack
   window.obToggleMulti       = obToggleMulti
   window.obSelectSingle      = obSelectSingle
+  window.obBackFromSummary   = obBackFromSummary
+  window.obGeneratePlan      = obGeneratePlan
 
   // Session
   window.loadSession         = loadSession
@@ -241,7 +243,7 @@ function showApp() {
   if (emailEl) emailEl.innerHTML = isGuestMode() ? '<i data-lucide="user"></i> Modo invitado' : (_user?.email || '')
 
   const meta = _plan?.meta || {}
-  initSession(_plan, meta.level || 'intermediate', meta.environment || 'gym')
+  initSession(_plan, meta.level || 'intermediate', meta.environment || 'gym', meta)
   initProgress(_plan)
   initReports(_plan)
 
@@ -335,7 +337,7 @@ function resetProgress() {
           console.warn('Error al limpiar Supabase:', e)
         }
       }
-      initSession(_plan, _plan?.meta?.level || 'intermediate', _plan?.meta?.environment || 'gym')
+      initSession(_plan, _plan?.meta?.level || 'intermediate', _plan?.meta?.environment || 'gym', _plan?.meta || {})
       navigateTo('fisico')
     }
   )

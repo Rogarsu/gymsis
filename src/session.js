@@ -6,7 +6,7 @@ import { getExLog, setExLog, clearExLog, getLog, addLog, getAllExLogs,
          setSessionStart, getSessionStart, setSessionEnd, getSessionEnd,
          getExSwap, setExSwap, clearExSwap } from './storage.js'
 import { getRecommendationForExercise, formatRecommendation } from './progression.js'
-import { getById, getAlternatives } from './exercises.js'
+import { getById, getAlternatives, getExerciseImage } from './exercises.js'
 import { ic, refreshIcons } from './icons.js'
 
 // ── Estado de la sesión ───────────────────────────────────────
@@ -26,12 +26,14 @@ let _guidedExIndex = 0
 let _guidedExercises = []
 let _userLevel = 'intermediate'
 let _userEnv = 'gym'
+let _userSex = 'male'
 
 // ── Inicialización ────────────────────────────────────────────
-export function initSession(plan, level = 'intermediate', env = 'gym') {
+export function initSession(plan, level = 'intermediate', env = 'gym', answers = {}) {
   _plan = plan
   _userLevel = level
   _userEnv = env
+  _userSex = answers.sex || 'male'
   renderSidebar()
   updateStats()
 }
@@ -473,6 +475,12 @@ export function closeExModal(e) {
 function renderModalSerieMode(planEx, activeEx, rec, currentSerie, completedSets) {
   const swapId = getExSwap(_modalExId, _modalSessionId)
   return `
+    <div class="ex-modal-image-wrap">
+      <img class="ex-modal-image"
+           src="${getExerciseImage(activeEx.id || _modalExId, _userSex)}"
+           onerror="this.closest('.ex-modal-image-wrap').style.display='none'"
+           alt="${activeEx.name}" />
+    </div>
     <div class="modal-ex-header">
       <h3 class="modal-ex-name">${activeEx.name}</h3>
       <div class="modal-ex-meta">
@@ -555,6 +563,12 @@ function renderModalEdit(planEx, activeEx, existingLog, rec) {
   const swapId = getExSwap(_modalExId, _modalSessionId)
   const sets = existingLog.sets || []
   return `
+    <div class="ex-modal-image-wrap">
+      <img class="ex-modal-image"
+           src="${getExerciseImage(activeEx.id || _modalExId, _userSex)}"
+           onerror="this.closest('.ex-modal-image-wrap').style.display='none'"
+           alt="${activeEx.name}" />
+    </div>
     <div class="modal-ex-header">
       <h3 class="modal-ex-name">${activeEx.name}</h3>
       <div class="modal-ex-meta">
