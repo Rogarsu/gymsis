@@ -237,7 +237,7 @@ a { color: var(--primary); text-decoration: none; }
   padding: 0 12px; background: var(--surface); border-bottom: 1px solid var(--border);
 }
 .top-nav-left  { display: flex; align-items: center; gap: 8px; }
-.top-nav-center{ display: flex; gap: 4px; }
+.top-nav-center{ gap: 4px; }
 .top-nav-right { display: flex; align-items: center; gap: 8px; position: relative; }
 .nav-logo      { font-size: 16px; font-weight: 700; color: var(--primary); white-space: nowrap; display: flex; align-items: center; gap: 6px; }
 .nav-logo svg  { width: 18px; height: 18px; flex-shrink: 0; }
