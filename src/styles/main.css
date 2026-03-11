@@ -468,7 +468,7 @@ a { color: var(--primary); text-decoration: none; }
 .session-tab.active { background: var(--primary); color: #fff; }
 .tab-panel { /* visible by default */ }
 
-/* Pre/Post workout */
+/* Pre/Post workout cards */
 .pre-workout-card, .post-workout-card {
   background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
   padding: 16px; margin-bottom: 12px;
@@ -476,6 +476,50 @@ a { color: var(--primary); text-decoration: none; }
 .pre-workout-card h3, .post-workout-card h3 { font-size: 15px; font-weight: 600; margin-bottom: 10px; }
 .warmup-list { list-style: none; display: flex; flex-direction: column; gap: 8px; }
 .warmup-list li { font-size: 14px; color: var(--text-muted); }
+
+/* Pre-entreno sections */
+.pre-section-card {
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+  overflow: hidden; margin-bottom: 12px;
+}
+.pre-section-label {
+  display: flex; align-items: center; gap: 7px;
+  font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--text-muted); padding: 10px 14px 8px;
+  border-bottom: 1px solid var(--border);
+}
+.pre-section-label svg { width: 13px; height: 13px; flex-shrink: 0; }
+
+.pre-info-item {
+  display: flex; align-items: flex-start; gap: 10px;
+  padding: 12px 14px; font-size: 14px; color: var(--text-muted); line-height: 1.5;
+}
+.pre-bullet { flex-shrink: 0; margin-top: 1px; }
+.pre-diamond { color: var(--primary); font-size: 10px; }
+
+.pre-check-item {
+  display: flex; align-items: center; gap: 10px; width: 100%;
+  padding: 11px 14px; font-size: 14px; color: var(--text-muted);
+  text-align: left; transition: background var(--transition);
+  border-top: 1px solid var(--border);
+}
+.pre-check-item:first-of-type { border-top: none; }
+.pre-check-item:hover { background: var(--surface-2); }
+.pre-check-item .pre-bullet { color: var(--primary); font-weight: 700; width: 16px; text-align: center; }
+.pre-item-text { flex: 1; line-height: 1.4; }
+.pre-check-icon { flex-shrink: 0; color: var(--text-subtle); }
+.pre-check-icon svg { width: 18px; height: 18px; display: block; }
+
+.pre-check-item.checked .pre-item-text { text-decoration: line-through; color: var(--text-subtle); }
+.pre-check-item.checked .pre-check-icon { color: var(--success); }
+.pre-check-item.checked { background: rgba(34,197,94,0.05); }
+
+.pre-mentalidad { border-left: 3px solid var(--primary); }
+.pre-mentalidad .pre-section-label { color: var(--primary); }
+.pre-quote {
+  font-size: 14px; font-style: italic; color: var(--text-muted); line-height: 1.6;
+  padding: 12px 14px;
+}
 
 /* Exercise table */
 .workout-toolbar { margin-bottom: 14px; }

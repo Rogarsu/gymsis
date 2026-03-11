@@ -216,24 +216,7 @@ function renderSessionView(session) {
 
     <!-- Tab: Pre-Entreno -->
     <div class="tab-panel" id="panel-pre">
-      <div class="pre-workout-card">
-        <h3>${ic('droplets')} Hidratación recomendada</h3>
-        <p>Bebe 500 ml de agua 30 minutos antes del entrenamiento. Durante la sesión: 200–300 ml cada 20 min.</p>
-      </div>
-      <div class="pre-workout-card">
-        <h3>${ic('flame')} Calentamiento dinámico (5 min)</h3>
-        <ul class="warmup-list">
-          <li>${ic('activity')} Rotaciones de cadera — 10 por lado</li>
-          <li>${ic('dumbbell')} Círculos de hombros — 10 hacia adelante y atrás</li>
-          <li>${ic('person-standing')} Movilidad torácica — 10 rotaciones</li>
-          <li>${ic('person-running')} Sentadillas con peso corporal — 15 reps lentas</li>
-          <li>${ic('activity')} Saltos suaves en el lugar — 30 seg</li>
-        </ul>
-      </div>
-      <div class="pre-workout-card">
-        <h3>${ic('brain')} Enfoque mental</h3>
-        <p>Antes de empezar, toma 3 respiraciones profundas. Define tu intención para esta sesión: ¿qué quieres mejorar hoy?</p>
-      </div>
+      ${renderPreEntreno(session.id, session.number)}
     </div>
 
     <!-- Tab: Entreno -->
@@ -274,6 +257,79 @@ function renderSessionView(session) {
   if (startTs && !isCompleted) {
     startSessionTimer(session.id, false)
   }
+}
+
+// ── Pre/Post Entreno ──────────────────────────────────────────
+
+const MOTIVATIONAL_QUOTES = [
+  'Céntrate en el proceso, no en el resultado. Cada repetición ejecutada con buena técnica es un paso hacia tu objetivo.',
+  'La disciplina es hacer lo que hay que hacer, aunque no tengas ganas. Eso te diferencia.',
+  'No se trata de ser el mejor del gym. Se trata de ser mejor que ayer.',
+  'Cada sesión completada es una promesa cumplida contigo mismo.',
+  'El dolor de hoy es la fuerza de mañana. Confía en el proceso.',
+  'Los grandes resultados requieren grandes compromisos. Hoy es un día para comprometerte.',
+  'Tu cuerpo puede hacer casi cualquier cosa. Es tu mente la que necesitas convencer.'
+]
+
+function getPreChecks(sessionId) {
+  try { return JSON.parse(localStorage.getItem(`sv_pre_${sessionId}`) || '[]') } catch { return [] }
+}
+
+export function togglePreCheck(sessionId, itemId) {
+  const checks = getPreChecks(sessionId)
+  const idx = checks.indexOf(itemId)
+  if (idx >= 0) { checks.splice(idx, 1) } else { checks.push(itemId) }
+  localStorage.setItem(`sv_pre_${sessionId}`, JSON.stringify(checks))
+  const el = document.getElementById(`pre-item-${itemId}`)
+  if (el) el.classList.toggle('checked', checks.includes(itemId))
+}
+
+function checkItem(sessionId, idx, bullet, text) {
+  const checks = getPreChecks(sessionId)
+  const itemId = `${sessionId}-${idx}`
+  const isChecked = checks.includes(itemId)
+  return `
+    <button class="pre-check-item ${isChecked ? 'checked' : ''}" id="pre-item-${itemId}"
+      onclick="togglePreCheck('${sessionId}', '${itemId}')">
+      <span class="pre-bullet">${bullet}</span>
+      <span class="pre-item-text">${text}</span>
+      <span class="pre-check-icon">${isChecked ? ic('check-circle') : ic('circle')}</span>
+    </button>`
+}
+
+function renderPreEntreno(sessionId, sessionNumber) {
+  const quote = MOTIVATIONAL_QUOTES[(sessionNumber - 1) % MOTIVATIONAL_QUOTES.length]
+  let idx = 0
+  return `
+    <div class="pre-section-card">
+      <span class="pre-section-label">${ic('droplets')} Hidratación y Nutrición Pre</span>
+      <div class="pre-info-item">
+        <span class="pre-bullet pre-diamond">◆</span>
+        <span>Bebe 500 ml de agua 30–45 min antes. Si entrenas de mañana, añade una pequeña fuente de carbohidratos (fruta, tostada).</span>
+      </div>
+    </div>
+
+    <div class="pre-section-card">
+      <span class="pre-section-label">${ic('flame')} Calentamiento Específico</span>
+      ${checkItem(sessionId, idx++, '→', 'Caminata rápida o trote suave (5 min)')}
+      ${checkItem(sessionId, idx++, '→', 'Inchworm (8 reps)')}
+      ${checkItem(sessionId, idx++, '→', 'Círculos de brazos (15 c/dirección)')}
+      ${checkItem(sessionId, idx++, '→', 'Jumping jacks o saltos suaves (30 seg)')}
+    </div>
+
+    <div class="pre-section-card">
+      <span class="pre-section-label">${ic('move')} Movilidad Articular</span>
+      ${checkItem(sessionId, idx++, '○', 'Rotación torácica (10 c/lado)')}
+      ${checkItem(sessionId, idx++, '○', 'Bisagra de cadera sin peso (10 reps)')}
+      ${checkItem(sessionId, idx++, '○', 'Círculos de cadera (10 c/dirección)')}
+      ${checkItem(sessionId, idx++, '○', 'Apertura de caderas en suelo (30 seg)')}
+    </div>
+
+    <div class="pre-section-card pre-mentalidad">
+      <span class="pre-section-label">${ic('zap')} Mentalidad</span>
+      <p class="pre-quote">"${quote}"</p>
+    </div>
+  `
 }
 
 function renderExerciseTable(session) {

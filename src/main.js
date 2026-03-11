@@ -10,7 +10,8 @@ import { initSession, renderSidebar, loadSession, loadNextSession, toggleSidebar
          openSwapModal, closeSwapModal, applySwap, revertSwap, updateEditSet, saveEditedSets,
          startGuidedMode, closeGuidedMode, completeGuidedSerie, guidedTimerAdjust, skipGuidedTimer,
          skipGuidedRest, guidedResume, guidedRestart,
-         togglePhase, updateStats, showConfirm, confirmOk, confirmCancel } from './session.js'
+         togglePhase, updateStats, showConfirm, confirmOk, confirmCancel,
+         togglePreCheck } from './session.js'
 import { initOnboarding as initOb } from './onboarding.js'
 import { renderHistory, filterHistory, sortHistory } from './history.js'
 import { renderNutrition, saveNutritionProfile, toggleMealMark, updateTrainingHour, editNutritionProfile } from './nutrition.js'
@@ -60,6 +61,7 @@ function exposeGlobals() {
   window.switchTab           = switchTab
   window.startSessionTimer   = startSessionTimer
   window.togglePhase         = togglePhase
+  window.togglePreCheck      = togglePreCheck
   window.openExModal         = openExModal
   window.closeExModal        = closeExModal
   window.completeCurrentSerie= completeCurrentSerie
