@@ -193,50 +193,101 @@ function resolveObjective(objectives) {
   return priority.find(p => objectives.includes(p)) || objectives[0]
 }
 
+// ── Peso de dificultad por fase ───────────────────────────────
+// Devuelve un score de preferencia: menor = más preferido en esa fase
+// No filtra el pool — solo ordena para que salgan los apropiados primero
+function difficultyScore(ex, phaseKey, userLevel) {
+  const levels    = ['beginner', 'intermediate', 'advanced']
+  const userIdx   = levels.indexOf(userLevel)   // 0, 1, 2
+
+  // Índice de dificultad del ejercicio (mínimo nivel requerido)
+  const exIdx = ex.level.includes('beginner')     ? 0
+              : ex.level.includes('intermediate')  ? 1
+              : 2
+
+  if (phaseKey === 'deload') {
+    // Deload: preferir los más simples
+    return exIdx
+  }
+  if (phaseKey === 'p1') {
+    // Adaptación: preferir 1 nivel por debajo del usuario
+    const target = Math.max(0, userIdx - 1)
+    return Math.abs(exIdx - target)
+  }
+  if (phaseKey === 'p2') {
+    // Desarrollo: preferir el nivel exacto del usuario
+    return Math.abs(exIdx - userIdx)
+  }
+  if (phaseKey === 'p3') {
+    // Intensificación: preferir el nivel del usuario o superior
+    return exIdx >= userIdx ? 0 : (userIdx - exIdx)
+  }
+  return Math.abs(exIdx - userIdx)
+}
+
 // ── Seleccionar ejercicios para un bloque ─────────────────────
-function pickExercises(muscle, count, environment, level, usedIds, phaseKey, objectives) {
+// planUsedCounts: Map<exId, usageCount> — rastrea uso en todo el plan para rotar
+// weekUsedIds:   Set<exId>             — evita repetir dentro de la misma semana
+// sessionIndex:  número de sesión global (para desempate pseudo-aleatorio)
+function pickExercises(muscle, count, environment, level, planUsedCounts, weekUsedIds, phaseKey, objectives, sessionIndex) {
   const mainObj = resolveObjective(objectives)
   const isHypertrophyOrStrength = ['muscle', 'strength'].includes(mainObj)
 
+  // 1. Pool completo del nivel del usuario (sin filtro duro por fase)
   let pool = getByMuscle(muscle, environment, level)
+  if (pool.length === 0) pool = getByMuscle(muscle, 'any', level)
 
-  // Excluir ya usados esta semana
-  pool = pool.filter(ex => !usedIds.has(ex.id))
+  // 2. Para hipertrofia/fuerza: incluir lengthened load en el pool con preferencia
+  //    (se refleja en el sort, no se filtra)
 
-  if (pool.length === 0) {
-    // Si no hay disponibles sin usar, reset del filtro de usados para este músculo
-    pool = getByMuscle(muscle, environment, level)
-  }
+  // 3. Ordenar por criterios combinados:
+  //    (a) compuestos primero
+  //    (b) no usado esta semana
+  //    (c) dificultad apropiada para la fase
+  //    (d) penalización por uso excesivo en el plan
+  //    (e) desempate con sessionIndex para rotar semana a semana
+  pool.sort((a, b) => {
+    // [1] Tipo: compuesto > aislamiento
+    const aComp = a.type === 'compound' ? 0 : 1
+    const bComp = b.type === 'compound' ? 0 : 1
+    if (aComp !== bComp) return aComp - bComp
 
-  // En deload: preferir ejercicios para principiante
-  if (phaseKey === 'deload') {
-    const beginnerPool = pool.filter(ex => ex.level.includes('beginner'))
-    if (beginnerPool.length > 0) pool = beginnerPool
-  }
+    // [2] No usado esta semana > ya usado esta semana
+    const aWeek = weekUsedIds.has(a.id) ? 1 : 0
+    const bWeek = weekUsedIds.has(b.id) ? 1 : 0
+    if (aWeek !== bWeek) return aWeek - bWeek
 
-  // Para hipertrofia/fuerza: preferir lengthened load
-  if (isHypertrophyOrStrength && phaseKey !== 'deload') {
-    const lengthenedPool = pool.filter(ex => ex.isLengthenedLoad)
-    if (lengthenedPool.length >= count) pool = lengthenedPool
-    else if (lengthenedPool.length > 0) {
-      // Mezcla: primero lengthened, luego resto
-      const rest = pool.filter(ex => !ex.isLengthenedLoad)
-      pool = [...lengthenedPool, ...rest]
+    // [3] Penalización por uso excesivo (>3 veces → penalización exponencial)
+    const aRaw = planUsedCounts.get(a.id) || 0
+    const bRaw = planUsedCounts.get(b.id) || 0
+    const aPenalty = aRaw >= 3 ? aRaw * 5 : aRaw
+    const bPenalty = bRaw >= 3 ? bRaw * 5 : bRaw
+    if (aPenalty !== bPenalty) return aPenalty - bPenalty
+
+    // [4] Dificultad apropiada para la fase
+    const aDiff = difficultyScore(a, phaseKey, level)
+    const bDiff = difficultyScore(b, phaseKey, level)
+    if (aDiff !== bDiff) return aDiff - bDiff
+
+    // [5] Para hipertrofia/fuerza: preferir lengthened load
+    if (isHypertrophyOrStrength && phaseKey !== 'deload') {
+      const aLen = a.isLengthenedLoad ? 0 : 1
+      const bLen = b.isLengthenedLoad ? 0 : 1
+      if (aLen !== bLen) return aLen - bLen
     }
-  }
 
-  // Priorizar compuestos primero, luego aislamiento
-  const compounds = pool.filter(ex => ex.type === 'compound')
-  const isolations = pool.filter(ex => ex.type === 'isolation')
-  pool = [...compounds, ...isolations]
+    // [6] Desempate rotativo por sessionIndex
+    return (a.id.charCodeAt(0) + sessionIndex) % 5 - 2
+  })
 
-  // Seleccionar 'count' ejercicios
+  // 6. Seleccionar 'count' ejercicios únicos
   const selected = []
   for (const ex of pool) {
     if (selected.length >= count) break
     if (!selected.find(s => s.id === ex.id)) {
       selected.push(ex)
-      usedIds.add(ex.id)
+      weekUsedIds.add(ex.id)
+      planUsedCounts.set(ex.id, (planUsedCounts.get(ex.id) || 0) + 1)
     }
   }
 
@@ -349,18 +400,21 @@ export function generatePlan(answers) {
   let sessionCounter = 1
   let templateIndex  = 0
 
+  // Rastreo de uso en todo el plan (para rotar ejercicios entre semanas)
+  const planUsedCounts = new Map()
+
   for (const phase of phases) {
     const phaseSessions = []
     const totalPhaseSessions = phase.weeks * daysPerWeek
 
-    // Rastreo de ejercicios usados por semana
-    let weeklyUsedIds = new Set()
+    // Rastreo de ejercicios usados esta semana (evita repetir en misma semana)
+    let weekUsedIds = new Set()
     let dayInWeek = 0
 
     for (let s = 0; s < totalPhaseSessions; s++) {
       // Resetear usados al iniciar nueva semana
       if (dayInWeek > 0 && dayInWeek % daysPerWeek === 0) {
-        weeklyUsedIds = new Set()
+        weekUsedIds = new Set()
       }
       dayInWeek++
 
@@ -384,7 +438,7 @@ export function generatePlan(answers) {
 
         const exercises = pickExercises(
           muscle, count, environment, level,
-          weeklyUsedIds, phase.phaseKey, objectives
+          planUsedCounts, weekUsedIds, phase.phaseKey, objectives, sessionCounter
         )
 
         for (const ex of exercises) {
