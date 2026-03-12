@@ -520,8 +520,8 @@ function buildSessionExercise(ex, slotMuscle, phaseKey, objectives, environment,
     const baseSets = ex.type === 'compound' ? methodConfig.sets.compound : methodConfig.sets.isolation
     numSets = phaseKey === 'deload' ? Math.max(2, Math.round(baseSets * 0.6)) : baseSets
 
-    // Aislamientos: +4 reps a cada extremo (excluye pure_strength)
-    if (ex.type === 'isolation' && methodConfig.id !== 'pure_strength') {
+    // Aislamientos: +4 reps a cada extremo (excluye pure_strength y deload)
+    if (ex.type === 'isolation' && methodConfig.id !== 'pure_strength' && phaseKey !== 'deload') {
       const parts = reps.split('-').map(Number)
       if (parts.length === 2) reps = `${parts[0] + 4}-${parts[1] + 4}`
     }
