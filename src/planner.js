@@ -395,12 +395,14 @@ function difficultyScore(ex, phaseKey, userLevel) {
 //   2. sin filtro de tipo
 //   3. por músculo con getByMuscle (comportamiento previo)
 function pickForSlot(slot, environment, level, planUsedCounts, weekUsedIds,
-                     sessionUsedIds, phaseKey, objectives, sessionIndex, excludedPatterns) {
+                     sessionUsedIds, sessionUsedPatterns, phaseKey, objectives, sessionIndex, excludedPatterns, sessionSlotPatterns) {
   const mainObj = resolveObjective(objectives)
   const isHypertrophyOrStrength = ['muscle', 'strength'].includes(mainObj)
   const patterns = Array.isArray(slot.pattern) ? slot.pattern : [slot.pattern]
 
-  function buildPool(envFilter, typeFilter) {
+  // allowUsedPatterns: si true, permite elegir un patrón ya usado en la sesión
+  // (fallback de último recurso cuando las limitaciones agotan las opciones)
+  function buildPool(envFilter, typeFilter, allowUsedPatterns) {
     return EXERCISES.filter(ex => {
       if (!patterns.includes(ex.movementPattern)) return false
       if (typeFilter !== 'any' && ex.type !== typeFilter) return false
@@ -408,25 +410,49 @@ function pickForSlot(slot, environment, level, planUsedCounts, weekUsedIds,
       if (!ex.level.includes(level) && !ex.level.includes('beginner')) return false
       if (sessionUsedIds.has(ex.id)) return false
       if (excludedPatterns && excludedPatterns.includes(ex.movementPattern)) return false
+      if (!allowUsedPatterns && sessionUsedPatterns.has(ex.movementPattern)) return false
       return true
     })
   }
 
-  // Intentos con filtros progresivamente más permisivos
-  let pool = buildPool(environment, slot.type)
-  if (pool.length === 0) pool = buildPool(null, slot.type)
-  if (pool.length === 0) pool = buildPool(environment, 'any')
-  if (pool.length === 0) pool = buildPool(null, 'any')
+  // Intentos con filtros progresivamente más permisivos (sin patrones ya usados)
+  let pool = buildPool(environment, slot.type, false)
+  if (pool.length === 0) pool = buildPool(null, slot.type, false)
+  if (pool.length === 0) pool = buildPool(environment, 'any', false)
+  if (pool.length === 0) pool = buildPool(null, 'any', false)
+
+  // Segunda ronda: permitir patrones ya usados si todo lo demás falla
+  if (pool.length === 0) pool = buildPool(environment, slot.type, true)
+  if (pool.length === 0) pool = buildPool(null, slot.type, true)
+  if (pool.length === 0) pool = buildPool(environment, 'any', true)
+  if (pool.length === 0) pool = buildPool(null, 'any', true)
 
   // Último recurso: músculo completo sin filtro de patrón
-  // Mantiene el filtro de excludedPatterns para respetar limitaciones físicas
   if (pool.length === 0) {
     let fallback = getByMuscle(slot.muscle, environment, level)
     if (fallback.length === 0) fallback = getByMuscle(slot.muscle, 'any', level)
+    // Primero: sin patrones ya usados ni reservados por otros slots
     pool = fallback.filter(ex =>
       !sessionUsedIds.has(ex.id) &&
-      (!excludedPatterns || !excludedPatterns.includes(ex.movementPattern))
+      (!excludedPatterns || !excludedPatterns.includes(ex.movementPattern)) &&
+      !sessionUsedPatterns.has(ex.movementPattern) &&
+      (!sessionSlotPatterns || !sessionSlotPatterns.has(ex.movementPattern))
     )
+    // Segunda pasada: sin patrones ya usados (pero permite los de otros slots)
+    if (pool.length === 0) {
+      pool = fallback.filter(ex =>
+        !sessionUsedIds.has(ex.id) &&
+        (!excludedPatterns || !excludedPatterns.includes(ex.movementPattern)) &&
+        !sessionUsedPatterns.has(ex.movementPattern)
+      )
+    }
+    // Si sigue vacío: permitir patrones ya usados
+    if (pool.length === 0) {
+      pool = fallback.filter(ex =>
+        !sessionUsedIds.has(ex.id) &&
+        (!excludedPatterns || !excludedPatterns.includes(ex.movementPattern))
+      )
+    }
   }
 
   if (pool.length === 0) return null
@@ -463,6 +489,7 @@ function pickForSlot(slot, environment, level, planUsedCounts, weekUsedIds,
   const chosen = pool[0]
   weekUsedIds.add(chosen.id)
   sessionUsedIds.add(chosen.id)
+  if (chosen.movementPattern) sessionUsedPatterns.add(chosen.movementPattern)
   planUsedCounts.set(chosen.id, (planUsedCounts.get(chosen.id) || 0) + 1)
   return chosen
 }
@@ -617,14 +644,23 @@ export function generatePlan(answers) {
 
       const exercisesForSession = []
       const sessionUsedIds      = new Set()   // evita repetir en la misma sesión
+      const sessionUsedPatterns = new Set()   // evita patrones repetidos en la sesión
+      // Todos los patrones reservados por los slots activos de esta sesión
+      const sessionSlotPatterns = new Set(
+        activeSlots.flatMap(s => Array.isArray(s.pattern) ? s.pattern : [s.pattern])
+      )
       let   position            = 1
 
       for (const slot of activeSlots) {
+        // El slot actual ya puede usar su propio patrón, así que lo quitamos del conjunto reservado
+        const ownPatterns = Array.isArray(slot.pattern) ? slot.pattern : [slot.pattern]
+        ownPatterns.forEach(p => sessionSlotPatterns.delete(p))
+
         const ex = pickForSlot(
           slot, environment, level,
-          planUsedCounts, weekUsedIds, sessionUsedIds,
+          planUsedCounts, weekUsedIds, sessionUsedIds, sessionUsedPatterns,
           phase.phaseKey, objectives, sessionCounter,
-          excludedPatterns
+          excludedPatterns, sessionSlotPatterns
         )
         if (!ex) continue
 
