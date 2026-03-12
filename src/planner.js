@@ -592,6 +592,7 @@ export function generatePlan(answers) {
 
   const plan = {
     meta: {
+      // Campos del plan
       objectives,
       level,
       daysPerWeek,
@@ -603,7 +604,15 @@ export function generatePlan(answers) {
       methodId:  methodId || null,
       modifiers,
       createdAt: new Date().toISOString().slice(0, 10),
-      rpeNote:   'Elige un peso con el que llegues cerca del fallo en la última serie (RPE 8-9). La última rep debe ser difícil pero técnicamente correcta. Si completas todas las reps con facilidad, sube el peso.'
+      rpeNote:   'Elige un peso con el que llegues cerca del fallo en la última serie (RPE 8-9). La última rep debe ser difícil pero técnicamente correcta. Si completas todas las reps con facilidad, sube el peso.',
+      // Perfil del onboarding (para reporte del coach)
+      sex:             answers.sex             || null,
+      bodyComposition: answers.bodyComposition || null,
+      sleep:           answers.sleep           || null,
+      stress:          answers.stress          || null,
+      job:             answers.job             || null,
+      age:             answers.age             || null,
+      limitations:     limitations.filter(l => l !== 'none')
     },
     phases: []
   }

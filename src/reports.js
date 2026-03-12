@@ -63,6 +63,64 @@ export function downloadPlanPDF() {
   openPrintWindow('Plan de Entrenamiento — SistemaVida', html)
 }
 
+// Tablas de etiquetas para el perfil del onboarding
+const LABEL_MAPS = {
+  sex:             { male: 'Hombre', female: 'Mujer', other: 'Prefiero no responder' },
+  objectives:      { strength: 'Ganar fuerza', muscle: 'Ganar músculo', fat_loss: 'Perder grasa', recomp: 'Recomposición', endurance: 'Resistencia', general: 'General' },
+  level:           { beginner: 'Principiante', intermediate: 'Intermedio', advanced: 'Avanzado' },
+  bodyComposition: { lean: 'Delgado/a', normal: 'Normal', overweight: 'Sobrepeso', muscular: 'Musculoso/a' },
+  sleep:           { good: 'Bueno (7–9 h)', moderate: 'Regular (5–7 h)', poor: 'Malo (<5 h)' },
+  stress:          { low: 'Bajo', moderate: 'Moderado', high: 'Alto' },
+  job:             { sedentary: 'Sedentario', moderate: 'Mixto', active: 'Activo' },
+  limitations:     { knees: 'Rodillas', back: 'Espalda', shoulders: 'Hombros', hips: 'Cadera' },
+  environment:     { gym: 'Gimnasio', home: 'Casa con equipo', none: 'Sin equipamiento' },
+  split:           { ppl: 'Push/Pull/Legs', fullbody: 'Full Body', upper_lower: 'Upper/Lower', upper: 'Upper Only', lower: 'Lower Only' },
+  methodId:        { linear_progression: 'Progresión Lineal', pure_strength: 'Fuerza Pura', hypertrophy: 'Hipertrofia', dup: 'DUP (Periodización Ondulante)', fat_loss: 'Pérdida de Grasa', recomp: 'Recomposición' }
+}
+
+function label(map, val) {
+  if (!val) return '—'
+  if (Array.isArray(val)) return val.map(v => LABEL_MAPS[map]?.[v] || v).join(', ') || '—'
+  return LABEL_MAPS[map]?.[val] || val
+}
+
+function buildProfileSection(meta) {
+  const rows = [
+    ['Sexo',               label('sex',             meta.sex)],
+    ['Objetivo',           label('objectives',       meta.objectives)],
+    ['Nivel',              label('level',            meta.level)],
+    ['Composición corporal', label('bodyComposition', meta.bodyComposition)],
+    ['Sueño',              label('sleep',            meta.sleep)],
+    ['Estrés',             label('stress',           meta.stress)],
+    ['Tipo de trabajo',    label('job',              meta.job)],
+    ['Edad',               meta.age || '—'],
+    ['Limitaciones físicas', meta.limitations?.length ? label('limitations', meta.limitations) : 'Ninguna'],
+    ['Entorno',            label('environment',      meta.environment)],
+    ['Días por semana',    meta.daysPerWeek ? `${meta.daysPerWeek} días` : '—'],
+    ['Duración por sesión',meta.duration   ? `${meta.duration} min`     : '—'],
+    ['División',           label('split',            meta.split)],
+    ['Duración del plan',  meta.planWeeks  ? `${meta.planWeeks} semanas (${meta.totalSessions} sesiones)` : '—'],
+    ['Método de entrenamiento', label('methodId',   meta.methodId)],
+  ]
+
+  return `
+    <div class="pdf-profile">
+      <h2 class="pdf-profile-title">Perfil del Atleta</h2>
+      <p class="pdf-profile-subtitle">Respuestas del cuestionario inicial — contexto para el coach</p>
+      <table class="pdf-profile-table">
+        <tbody>
+          ${rows.map(([k, v]) => `
+            <tr>
+              <td class="pdf-profile-key">${k}</td>
+              <td class="pdf-profile-val">${v}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    </div>
+  `
+}
+
 function buildPlanHTML(plan) {
   const meta = plan.meta || {}
 
@@ -109,18 +167,10 @@ function buildPlanHTML(plan) {
 
   return `
     <div class="pdf-header">
-      <h1>🏋️ SistemaVida — Plan de Entrenamiento</h1>
-      <div class="pdf-meta-grid">
-        <span>Objetivo: ${meta.objectives?.join(', ') || '—'}</span>
-        <span>Nivel: ${meta.level || '—'}</span>
-        <span>Días/semana: ${meta.daysPerWeek || '—'}</span>
-        <span>Duración: ${meta.duration || '—'} min</span>
-        <span>Entorno: ${meta.environment || '—'}</span>
-        <span>División: ${meta.split || '—'}</span>
-        <span>Plan: ${meta.planWeeks || '—'} semanas · ${meta.totalSessions || '—'} sesiones</span>
-        <span>Creado: ${meta.createdAt || '—'}</span>
-      </div>
+      <h1>SistemaVida — Plan de Entrenamiento</h1>
+      <p class="pdf-header-date">Generado el ${meta.createdAt || '—'}</p>
     </div>
+    ${buildProfileSection(meta)}
     ${phaseHTML}
   `
 }
@@ -220,8 +270,14 @@ function openPrintWindow(title, content) {
         h2 { font-size: 15px; color: #4a0080; margin: 20px 0 8px; border-bottom: 2px solid #7c3aed; padding-bottom: 4px; }
         h3 { font-size: 13px; color: #333; margin: 14px 0 6px; }
         .pdf-header { margin-bottom: 20px; padding-bottom: 12px; border-bottom: 3px solid #7c3aed; }
-        .pdf-meta-grid { display: flex; flex-wrap: wrap; gap: 6px 16px; margin-top: 8px; }
-        .pdf-meta-grid span { background: #f3f0ff; padding: 2px 8px; border-radius: 4px; font-size: 10px; }
+        .pdf-header-date { font-size: 10px; color: #666; margin-top: 4px; }
+        .pdf-profile { margin-bottom: 24px; padding: 14px 16px; background: #faf9ff; border: 1px solid #d4c8f5; border-radius: 6px; page-break-inside: avoid; }
+        .pdf-profile-title { font-size: 15px; color: #7c3aed; margin-bottom: 2px; border-bottom: none; }
+        .pdf-profile-subtitle { font-size: 10px; color: #888; margin-bottom: 10px; }
+        .pdf-profile-table { width: 100%; border-collapse: collapse; }
+        .pdf-profile-table tr:nth-child(even) td { background: #f0ebff; }
+        .pdf-profile-key { padding: 4px 10px 4px 0; font-weight: 600; color: #4a0080; width: 42%; font-size: 10px; vertical-align: top; }
+        .pdf-profile-val { padding: 4px 0; color: #1a1a2e; font-size: 10px; }
         .pdf-phase { margin-bottom: 24px; }
         .pdf-phase-title { font-size: 16px; color: #7c3aed; margin-bottom: 4px; }
         .pdf-phase-meta { font-size: 10px; color: #666; margin-bottom: 10px; }
